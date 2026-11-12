@@ -4,7 +4,9 @@ PYTHON PUR : aucun import de Streamlit ni de httpx. Les pages appellent ces fonc
 ce qui permet de les tester sans navigateur ni serveur (tests 11 et 12).
 """
 
-from datetime import date, datetime
+import calendar
+import re
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 FUSEAU = ZoneInfo("Europe/Paris")
@@ -31,16 +33,62 @@ def libelle(correspondances: dict[str, str | None], valeur: str | None) -> str:
     # un jour, la page l'affiche brute au lieu de planter devant l'étudiant.
 
 
-def lire_creneaux_saisis(texte: str) -> list[str]:
-    """« 18:00-20:00, 21:00-22:00 » → ["18:00-20:00", "21:00-22:00"] (vide → [])."""
-    return [creneau.strip() for creneau in texte.split(",") if creneau.strip()]
-    # Pourquoi une virgule : un seul champ texte par jour reste simple à remplir ; c'est
-    # l'API qui vérifie ensuite le format exact de chaque créneau (422 sinon).
+MOTIF_HEURE = re.compile(r"^\s*(\d{1,2})\s*(?:[h:]\s*(\d{2})?)?\s*$", re.IGNORECASE)
 
 
-def ecrire_creneaux(creneaux: list[str]) -> str:
-    """Le sens inverse : la liste du contrat → le texte à afficher dans le champ."""
-    return ", ".join(creneaux)
+def lire_heure(texte: object) -> time | None:
+    """Heure tapée par l'étudiant → time : « 18:30 », « 18h », « 9h15 », « 18 » ; None si illisible."""
+    correspondance = MOTIF_HEURE.match(texte) if isinstance(texte, str) else None
+    if correspondance is None:
+        return None
+    heures, minutes = int(correspondance.group(1)), int(correspondance.group(2) or 0)
+    return time(heures, minutes) if heures < 24 and minutes < 60 else None
+    # Pourquoi accepter plusieurs écritures : chacun tape l'heure à sa façon (« 18h », « 18:00 ») ;
+    # c'est au programme de comprendre, pas à l'étudiant de deviner le bon format.
+    # Pourquoi `object` : une case vide du tableau peut valoir None ou NaN, pas seulement du texte.
+
+
+def ligne_creneau(jour: str, debut: str, fin: str) -> dict:
+    """Une ligne du tableau des disponibilités : {"Jour": "Lundi", "Début": "18:00", "Fin": "20:00"}."""
+    return {"Jour": JOURS[jour], "Début": debut, "Fin": fin}
+    # Pourquoi du texte et pas un objet time : la case reste un simple champ où l'on tape.
+
+
+SUGGESTIONS_CRENEAUX = {
+    "Soirs en semaine (18h–20h)": [ligne_creneau(jour, "18:00", "20:00")
+                                   for jour in ("monday", "tuesday", "wednesday", "thursday", "friday")],
+    "Mercredi après-midi (14h–17h)": [ligne_creneau("wednesday", "14:00", "17:00")],
+    "Week-end matin (10h–12h)": [ligne_creneau(jour, "10:00", "12:00") for jour in ("saturday", "sunday")],
+    "Week-end après-midi (14h–18h)": [ligne_creneau(jour, "14:00", "18:00") for jour in ("saturday", "sunday")],
+}
+# Pourquoi des suggestions : l'étudiant clique au lieu de taper des heures ; les lignes
+# ajoutées restent modifiables dans le tableau (demande de l'équipe).
+
+
+def creneaux_vers_lignes(creneaux: dict[str, list[str]]) -> list[dict]:
+    """Créneaux du contrat ({"monday": ["18:00-20:00"]}) → lignes du tableau, triées par jour puis heure."""
+    lignes = []
+    for jour in JOURS:
+        for creneau in sorted(creneaux.get(jour, [])):
+            debut, fin = creneau.split("-")
+            lignes.append(ligne_creneau(jour, debut, fin))
+    return lignes
+    # Pourquoi parcourir JOURS : l'ordre lundi → dimanche vient du dictionnaire, pas de l'API.
+
+
+def lignes_vers_creneaux(lignes: list[dict]) -> dict[str, list[str]]:
+    """Le sens inverse : lignes du tableau → créneaux du contrat ; les lignes incomplètes sont ignorées."""
+    cle_du_jour = {libelle_jour: cle for cle, libelle_jour in JOURS.items()}
+    creneaux: dict[str, list[str]] = {}
+    for ligne in lignes:
+        jour, debut, fin = ligne.get("Jour"), lire_heure(ligne.get("Début")), lire_heure(ligne.get("Fin"))
+        if jour in cle_du_jour and debut and fin:
+            creneaux.setdefault(cle_du_jour[jour], []).append(f"{debut:%H:%M}-{fin:%H:%M}")
+    return {jour: sorted(set(liste)) for jour, liste in creneaux.items()}
+    # Pourquoi lire_heure : « 9h » devient « 09:00 », le format exact du contrat. Une case vide
+    # ou illisible donne None : on n'envoie pas de créneau à moitié rempli. Pourquoi set() : une
+    # suggestion cliquée deux fois ne crée pas de doublon. Une fin avant le début, elle, est
+    # refusée par l'API (422) avec un message clair.
 
 
 def semaine_iso(jour: date) -> str:
@@ -68,6 +116,31 @@ def compter_sessions(sessions: list[dict], maintenant: datetime) -> tuple[int, i
     return faites, en_retard
     # Pourquoi comparer la FIN de la session : une session commencée mais pas terminée
     # n'est pas encore « en retard » (CA5.2, décision Q11 de SPEC.md).
+
+
+def grille_du_mois(annee: int, mois: int) -> list[list[date]]:
+    """Les semaines du mois, du lundi au dimanche, en débordant sur les mois voisins (comme un agenda)."""
+    return calendar.Calendar(firstweekday=0).monthdatescalendar(annee, mois)
+    # Pourquoi le module calendar (bibliothèque standard) : il sait déjà découper un mois en
+    # semaines complètes ; inutile de réécrire ce calcul (et ses pièges) nous-mêmes.
+
+
+def sessions_par_date(sessions: list[dict]) -> dict[date, list[dict]]:
+    """Range les sessions par jour, dans l'ordre des heures, pour les poser dans les cases du calendrier."""
+    rangees: dict[date, list[dict]] = {}
+    for session in sorted(sessions, key=lambda session: session["start"]):
+        rangees.setdefault(datetime.fromisoformat(session["start"]).date(), []).append(session)
+    return rangees
+    # Pourquoi trier d'abord : dans chaque case, les sessions apparaissent de la plus tôt à la plus tard.
+
+
+def prochaine_session(sessions: list[dict], maintenant: datetime) -> dict | None:
+    """La 1re session pas faite et pas encore finie (celle en cours compte), ou None."""
+    a_faire = [session for session in sessions
+               if not session["done"] and datetime.fromisoformat(session["end"]) > maintenant]
+    return min(a_faire, key=lambda session: session["start"], default=None)
+    # Pourquoi la FIN et pas le début : une session commencée il y a 10 minutes est
+    # encore « à faire maintenant » ; c'est elle que l'étudiant doit voir en premier.
 
 
 def prochaines_echeances(echeances: list[dict], aujourdhui: date, nombre: int = 3) -> list[dict]:

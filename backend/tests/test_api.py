@@ -147,6 +147,9 @@ def test_api_regeneration_garde_les_sessions_faites(client: TestClient) -> None:
     assert client.get("/plan", params={"week": semaine}).json() == seconde
     assert client.post("/plan/generate", json={"week": "2026-47"}).status_code == 422
     assert client.patch("/sessions/999", json={"done": True}).status_code == 404
+    # 5. Une session de révision dure entre 1 h et 2 h (décision de l'équipe) : 30 ou 150 min → 422.
+    for minutes, code in ((30, 422), (59, 422), (60, 200), (120, 200), (121, 422), (150, 422)):
+        assert client.put("/availability", json={"session_minutes": minutes, "slots": {}}).status_code == code
     # Pourquoi changer les disponibilités entre les deux générations : sans ça, le test
     # passait même si les anciennes sessions n'étaient pas supprimées (vérifié en cassant
     # le code). Il faut que l'ancien planning devienne faux pour prouver qu'il est remplacé.

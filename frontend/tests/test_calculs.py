@@ -1,6 +1,6 @@
 """Tests 11 et 12 (front) : calculs purs du front (frontend/calculs.py), sans Streamlit ni réseau."""
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from calculs import (
@@ -9,13 +9,18 @@ from calculs import (
     JOURS,
     PRIORITES,
     TYPES_ECHEANCE,
+    SUGGESTIONS_CRENEAUX,
     compter_sessions,
-    ecrire_creneaux,
+    creneaux_vers_lignes,
+    grille_du_mois,
     jour_et_horaire,
     libelle,
-    lire_creneaux_saisis,
+    lignes_vers_creneaux,
+    lire_heure,
+    prochaine_session,
     prochaines_echeances,
     semaine_iso,
+    sessions_par_date,
 )
 
 
@@ -38,10 +43,38 @@ def test_semaine_iso_et_libelles() -> None:
     assert libelle(TYPES_ECHEANCE, "exam") == "Examen"
     # Une valeur inconnue s'affiche telle quelle au lieu de faire planter la page.
     assert libelle(PRIORITES, "urgent") == "urgent"
-    # Saisie des disponibilités : « 18:00-20:00, 21:00-22:00 » ↔ liste du contrat (P0-14).
-    assert lire_creneaux_saisis(" 18:00-20:00 , 21:00-22:00, ") == ["18:00-20:00", "21:00-22:00"]
-    assert lire_creneaux_saisis("") == []
-    assert ecrire_creneaux(["18:00-20:00", "21:00-22:00"]) == "18:00-20:00, 21:00-22:00"
+    # Disponibilités : tableau à l'écran (jour, début, fin) ↔ créneaux du contrat (P0-14).
+    lignes = creneaux_vers_lignes({"wednesday": ["14:00-17:00"], "monday": ["20:00-22:00", "18:00-19:00"]})
+    assert lignes == [  # triées par jour puis par heure, jours en français
+        {"Jour": "Lundi", "Début": "18:00", "Fin": "19:00"},
+        {"Jour": "Lundi", "Début": "20:00", "Fin": "22:00"},
+        {"Jour": "Mercredi", "Début": "14:00", "Fin": "17:00"},
+    ]
+    # Les heures se TAPENT librement : « 9h », « 10h30 », « 18 » sont compris.
+    assert [lire_heure(texte) for texte in ("18:30", "18h", "9h15", " 18 ", "25:00", "abc", "", None)] == [
+        time(18, 30), time(18, 0), time(9, 15), time(18, 0), None, None, None, None]
+    tapee = {"Jour": "Mardi", "Début": "9h", "Fin": "10h30"}
+    # Aller-retour sans perte ; une ligne incomplète ou illisible est ignorée ;
+    # un doublon (suggestion cliquée deux fois) n'est envoyé qu'une fois.
+    incomplete = {"Jour": "Jeudi", "Début": "9h", "Fin": None}
+    assert lignes_vers_creneaux(lignes + [tapee, incomplete, lignes[0]]) == {
+        "monday": ["18:00-19:00", "20:00-22:00"], "tuesday": ["09:00-10:30"], "wednesday": ["14:00-17:00"]}
+    assert lignes_vers_creneaux([]) == {}
+    # Une suggestion donne des lignes prêtes à modifier (ex. les soirs de semaine).
+    soirs = SUGGESTIONS_CRENEAUX["Soirs en semaine (18h–20h)"]
+    assert len(soirs) == 5 and soirs[0] == {"Jour": "Lundi", "Début": "18:00", "Fin": "20:00"}
+
+    # Calendrier du mois : semaines complètes du lundi au dimanche (le 1/11/2026 est un dimanche).
+    grille = grille_du_mois(2026, 11)
+    assert len(grille) == 6 and all(len(semaine) == 7 for semaine in grille)
+    assert (grille[0][0], grille[0][6]) == (date(2026, 10, 26), date(2026, 11, 1))
+    assert (grille[-1][0], grille[-1][6]) == (date(2026, 11, 30), date(2026, 12, 6))
+    # Les sessions sont rangées par date, dans l'ordre des heures, pour les poser dans les cases.
+    sessions = [{"start": "2026-11-16T19:00:00+01:00"}, {"start": "2026-11-18T14:00:00+01:00"},
+                {"start": "2026-11-16T18:00:00+01:00"}]
+    par_date = sessions_par_date(sessions)
+    assert list(par_date) == [date(2026, 11, 16), date(2026, 11, 18)]
+    assert [s["start"][11:16] for s in par_date[date(2026, 11, 16)]] == ["18:00", "19:00"]
     assert JOURS["monday"] == "Lundi" and len(JOURS) == 7
     # Pourquoi tester ces conversions : une semaine mal calculée (fin décembre) ou une faute
     # de frappe (« continous ») ferait échouer l'API alors que la page aurait l'air correcte.
@@ -58,6 +91,9 @@ def test_indicateurs_dashboard() -> None:
     ]
     # 1 faite ; 1 seule en retard : celle en cours n'est pas finie, celle de jeudi est à venir.
     assert compter_sessions(sessions, maintenant) == (1, 1)
+    # Prochaine session à faire : la 1re non faite et pas encore finie (celle en cours compte).
+    assert prochaine_session(sessions, maintenant)["start"] == "2026-11-18T11:30:00+01:00"
+    assert prochaine_session(sessions[:2], maintenant) is None  # plus rien à venir
 
     echeances = [
         {"title": "Partiel", "date": "2026-12-08"}, {"title": "Passée", "date": "2026-11-10"},

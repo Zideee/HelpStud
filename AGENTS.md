@@ -102,11 +102,11 @@ backend/tests/                   conftest.py + test_*.py
 frontend/app.py                  Streamlit, navigation
 frontend/api_client.py           SEUL module qui fait des requêtes HTTP
 frontend/fake_data.py            données factices au format exact de l'API
-frontend/pages/                  1_Import.py, 2_Echeances.py, 3_Planning.py, 4_Dashboard.py
+frontend/ecrans/                  1_Import.py, 2_Echeances.py, 3_Planning.py, 4_Dashboard.py
 sample_data/                     3 cours .md, deadlines.csv, availability.json
 docs/                            spec officielle
 docs/sprint1/                    P0.md (tâches obligatoires), P1.md (compléments)
-SPEC.md, AGENTS.md, AI_LOG.md, README.md, requirements.txt
+SPEC.md, AGENTS.md, README.md, requirements.txt
 ```
 
 ## 5. Conventions de code
@@ -161,13 +161,11 @@ Toutes les commandes se lancent **depuis la racine du dépôt**, venv activé.
 |---|---|
 | **Product Owner** | Porte `SPEC.md` et les priorités, dit non aux dérives. |
 | **Driver** | Au clavier, pilote l'IA, enchaîne les étapes. |
-| **Navigator + Tester** | Relit chaque diff et chaque commande, écrit les tests d'abord, tient `AI_LOG.md`, chasse les cas limites. |
+| **Navigator + Tester** | Relit chaque diff et chaque commande, écrit les tests d'abord, chasse les cas limites. |
 
 **Une seule personne code** : le Driver. Les deux autres ne commitent pas sur la branche
 en cours (ils écrivent les tests avec le Driver, relisent et valident).
 
 ## 9. Usage de l'IA
 
-- Chaque usage notable de l'IA est noté dans [`AI_LOG.md`](AI_LOG.md) : demande,
-  résultat, ce qu'on a gardé / corrigé, et pourquoi.
 - L'IA propose, **les tests tranchent** : plausible ≠ correct.

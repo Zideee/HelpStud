@@ -93,11 +93,17 @@ class Echeance(EcheanceBase):
 
 # --- Disponibilités et planning ------------------------------------------------------
 
+MINUTES_SESSION_MIN = 60
+MINUTES_SESSION_MAX = 120
+
 class Disponibilite(BaseModel):
     """Corps et réponse de PUT /availability."""
 
-    session_minutes: int = Field(gt=0)
+    session_minutes: int = Field(ge=MINUTES_SESSION_MIN, le=MINUTES_SESSION_MAX)
     slots: dict[Jour, list[str]]
+    # Pourquoi 1 h à 2 h (décision de l'équipe) : moins d'1 h, on n'a pas le temps d'entrer
+    # dans un chapitre ; plus de 2 h, la concentration chute. Vérifié ici, et pas seulement
+    # à l'écran, pour que la règle tienne même si on appelle l'API directement (422 sinon).
 
     @field_validator("slots")
     @classmethod
