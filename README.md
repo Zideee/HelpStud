@@ -160,6 +160,6 @@ Règles : [`AGENTS.md`](AGENTS.md) — journal : [`AI_LOG.md`](AI_LOG.md).
 
 | Membre | Sprint 1 | Sprint 2 | Sprint 3 |
 |---|---|---|---|
-| Johann |  Seraphin |  Ken-andrew | |
+|     Johann, Ken-andrew, Johann |  Johann |  Seraphin      | ken-andrew| 
 | | | | |
 | | | | |
