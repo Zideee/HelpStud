@@ -6,7 +6,7 @@ import api_client
 from calculs import PRIORITES
 
 st.title("📥 Importer un cours")
-st.write("Choisissez d'abord la priorité du cours, puis envoyez son fichier.")
+st.write("Choisissez d'abord la priorité du cours, puis envoyez le PDF de votre cours.")
 st.caption("Vos dates d'examen et de contrôle continu s'ajoutent plus tard, dans « Échéances », "
            "quand vous les connaissez : elles classent le cours automatiquement.")
 
@@ -15,9 +15,12 @@ priorite = st.selectbox("Priorité du cours", list(PRIORITES), index=1)
 # Pourquoi index=1 : « Moyenne » est la valeur par défaut de l'API ; l'écran propose la même.
 # Pourquoi plus de catégorie : elle est déduite des échéances (CA2.7, décision de l'équipe).
 
-# 2. Le fichier du cours.
-fichier = st.file_uploader("Fichier du cours", type=["md", "pdf"],
-                           help="Markdown : un chapitre par titre # ou ##. PDF : un chapitre par page.")
+# 2. Le fichier du cours : PDF uniquement à l'écran (C-04).
+fichier = st.file_uploader("PDF de votre cours", type=["pdf"],
+                           help="Un chapitre par titre « Chapitre 1 … », « Partie II … » ou « 1. … » ; "
+                                "sans titre reconnu, un chapitre par page.")
+# Pourquoi PDF seul : les étudiants ont leurs cours en PDF, pas en Markdown (décision de
+# l'équipe, CA1.1). L'API accepte toujours le .md (spec officielle, données de démo).
 
 # 3. L'envoi : le bouton reste grisé tant qu'aucun fichier n'est choisi.
 if st.button("Importer", type="primary", disabled=fichier is None):

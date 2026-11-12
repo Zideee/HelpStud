@@ -1,0 +1,147 @@
+%PDF-1.3
+%âãÏÓ
+1 0 obj
+<<
+/Producer (pypdf)
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 4
+/Kids [ 4 0 R 6 0 R 8 0 R 10 0 R ]
+>>
+endobj
+3 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 5 0 R
+>>
+endobj
+5 0 obj
+<<
+/Length 1089
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 1 — Statistiques descriptives) Tj T* () Tj T* (Les statistiques descriptives résument un ensemble de données par quelques nombres. Les) Tj T* (indicateurs de position décrivent le centre de la distribution : la moyenne est la somme) Tj T* (des valeurs divisée par leur nombre, la médiane est la valeur qui partage les données en) Tj T* (deux moitiés, et le mode est la valeur la plus fréquente.) Tj T* () Tj T* (La moyenne est sensible aux valeurs extrêmes : un seul salaire très élevé suffit à la) Tj T* (faire monter, alors que la médiane bouge peu. C'est pourquoi on préfère souvent la) Tj T* (médiane pour décrire des revenus ou des prix immobiliers.) Tj T* () Tj T* (Les indicateurs de dispersion mesurent à quel point les valeurs s'écartent du centre.) Tj T* (La variance est la moyenne des carrés des écarts à la moyenne, et l'écart-type est sa) Tj T* (racine carrée, exprimée dans la même unité que les données. L'écart interquartile, entre) Tj T* (le premier et le troisième quartile, est moins sensible aux valeurs extrêmes.) Tj T* () Tj ET
+endstream
+endobj
+6 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<<
+/Length 847
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 2 — Probabilités) Tj T* () Tj T* (Une probabilité est un nombre entre 0 et 1 qui mesure la chance qu'un événement se) Tj T* (produise. La probabilité de l'événement contraire vaut un moins la probabilité de) Tj T* (l'événement. Pour deux événements incompatibles, la probabilité que l'un ou l'autre se) Tj T* (produise est la somme de leurs probabilités.) Tj T* () Tj T* (La probabilité conditionnelle est la probabilité d'un événement sachant qu'un autre) Tj T* (s'est produit. Deux événements sont indépendants si savoir que l'un s'est produit ne) Tj T* (change pas la probabilité de l'autre. La formule de Bayes permet d'inverser un) Tj T* (conditionnement : à partir de la probabilité d'un symptôme sachant une maladie, elle) Tj T* (donne la probabilité de la maladie sachant le symptôme.) Tj T* () Tj ET
+endstream
+endobj
+8 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 9 0 R
+>>
+endobj
+9 0 obj
+<<
+/Length 823
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 3 — Lois de probabilité) Tj T* () Tj T* (Une variable aléatoire associe un nombre au résultat d'une expérience. Sa loi décrit les) Tj T* (valeurs possibles et leurs probabilités. La loi de Bernoulli modélise une expérience à) Tj T* (deux issues, succès ou échec. La loi binomiale compte le nombre de succès sur plusieurs) Tj T* (répétitions indépendantes de cette expérience.) Tj T* () Tj T* (La loi normale, en forme de cloche, est définie par sa moyenne et son écart-type. Environ) Tj T* (95 % des valeurs se trouvent à moins de deux écarts-types de la moyenne. Elle apparaît) Tj T* (partout grâce au théorème central limite : la moyenne d'un grand nombre de variables) Tj T* (indépendantes suit approximativement une loi normale, quelle que soit leur loi d'origine.) Tj T* () Tj ET
+endstream
+endobj
+10 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 11 0 R
+>>
+endobj
+11 0 obj
+<<
+/Length 756
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 4 — Tests d'hypothèse) Tj T* () Tj T* (Un test d'hypothèse permet de décider, à partir d'un échantillon, si une affirmation sur) Tj T* (la population est plausible. On formule une hypothèse nulle, par exemple « la moyenne) Tj T* (vaut 12 », et une hypothèse alternative. On calcule ensuite une statistique de test et) Tj T* (sa p-valeur.) Tj T* () Tj T* (La p-valeur est la probabilité d'observer un résultat au moins aussi extrême si) Tj T* (l'hypothèse nulle est vraie. Si elle est inférieure au seuil choisi, souvent 5 %, on) Tj T* (rejette l'hypothèse nulle. Une p-valeur élevée ne prouve pas que l'hypothèse nulle est) Tj T* (vraie : elle indique seulement que les données ne permettent pas de la rejeter.) Tj ET
+endstream
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000015 00000 n 
+0000000054 00000 n 
+0000000132 00000 n 
+0000000181 00000 n 
+0000000389 00000 n 
+0000001530 00000 n 
+0000001738 00000 n 
+0000002636 00000 n 
+0000002844 00000 n 
+0000003718 00000 n 
+0000003928 00000 n 
+trailer
+<<
+/Size 12
+/Root 3 0 R
+/Info 1 0 R
+>>
+startxref
+4736
+%%EOF
