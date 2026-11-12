@@ -15,8 +15,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS courses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('high', 'medium', 'low')),
-  category TEXT CHECK (category IN ('exam', 'continuous', 'mixed'))
+  priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('high', 'medium', 'low'))
 );
 CREATE TABLE IF NOT EXISTS chapters (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,6 +50,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 # langue, donc pas d'erreur de traduction entre les deux. Les CHECK sont un 2e filet de
 # sécurité derrière Pydantic. availability a une seule ligne (id = 1) : un seul utilisateur.
 # Les dates sont du texte ISO 8601 car SQLite n'a pas de vrai type date.
+# Pas de colonne « category » : elle est calculée à partir des échéances (SPEC §5.4),
+# donc elle ne peut jamais contredire les dates saisies.
 
 
 def chemin_base() -> str:

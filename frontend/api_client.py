@@ -70,21 +70,16 @@ def lister_cours() -> list[dict]:
     return envoyer("GET", "/courses").json()
 
 
-def importer_cours(nom_fichier: str, contenu: bytes, priorite: str, categorie: str | None) -> dict:
-    """POST /courses : envoie le fichier, avec la priorité et la catégorie choisies avant."""
-    champs = {"priority": priorite}
-    if categorie is not None:
-        champs["category"] = categorie
-    return envoyer("POST", "/courses", files={"file": (nom_fichier, contenu)}, data=champs).json()
-    # Pourquoi ne pas envoyer category quand elle vaut None : un champ de formulaire ne peut
-    # pas valoir « null » ; l'absence du champ donne la valeur par défaut (non précisée).
+def importer_cours(nom_fichier: str, contenu: bytes, priorite: str) -> dict:
+    """POST /courses : envoie le fichier, avec la priorité choisie avant."""
+    return envoyer("POST", "/courses", files={"file": (nom_fichier, contenu)},
+                   data={"priority": priorite}).json()
+    # Pourquoi plus de catégorie : elle est calculée par l'API à partir des échéances (CA2.7).
 
 
-def modifier_cours(cours_id: int, priorite: str | None = None, categorie: str | None = None) -> dict:
-    """PATCH /courses/{id} : change la priorité et/ou la catégorie."""
-    corps = {cle: valeur for cle, valeur in (("priority", priorite), ("category", categorie))
-             if valeur is not None}
-    return envoyer("PATCH", f"/courses/{cours_id}", json=corps).json()
+def modifier_cours(cours_id: int, priorite: str) -> dict:
+    """PATCH /courses/{id} : change la priorité du cours."""
+    return envoyer("PATCH", f"/courses/{cours_id}", json={"priority": priorite}).json()
 
 
 # --- Échéances et disponibilités ------------------------------------------------------------

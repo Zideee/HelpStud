@@ -16,9 +16,9 @@ def test_parcours_complet_progression(client: TestClient) -> None:
     """Upload → échéance → disponibilités → generate → session faite → progression → .ics."""
     aujourdhui = datetime.now(FUSEAU).date()
 
-    # 1. L'étudiant importe son cours de SQL (priorité haute, catégorie mixte).
+    # 1. L'étudiant importe son cours de SQL (priorité haute).
     cours = client.post("/courses", files={"file": ("SQL.md", (DONNEES_DEMO / "SQL.md").read_bytes())},
-                        data={"priority": "high", "category": "mixed"})
+                        data={"priority": "high"})
     assert cours.status_code == 201
     cours_id = cours.json()["id"]
 

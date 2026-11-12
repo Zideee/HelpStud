@@ -9,7 +9,8 @@ from zoneinfo import ZoneInfo
 
 FUSEAU = ZoneInfo("Europe/Paris")
 PRIORITES = {"Haute": "high", "Moyenne": "medium", "Basse": "low"}
-CATEGORIES = {"Examen": "exam", "Contrôle continu": "continuous", "Mixte": "mixed", "Non précisée": None}
+CATEGORIES = {"Examen": "exam", "Contrôle continu": "continuous", "Mixte": "mixed", "Sans échéance": None}
+# CATEGORIES ne sert plus qu'à l'AFFICHAGE : la catégorie est calculée par l'API (CA2.7).
 TYPES_ECHEANCE = {"Examen": "exam", "Contrôle continu": "assignment"}
 JOURS_COURTS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 JOURS = {"monday": "Lundi", "tuesday": "Mardi", "wednesday": "Mercredi", "thursday": "Jeudi",

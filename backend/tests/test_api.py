@@ -59,40 +59,50 @@ def test_api_echeances(client: TestClient) -> None:
 
 
 def envoyer_cours(client: TestClient, nom_fichier: str, contenu: bytes, **champs: str):
-    """Envoie un fichier à POST /courses, avec d'éventuels champs priority / category."""
+    """Envoie un fichier à POST /courses, avec un éventuel champ priority."""
     return client.post("/courses", files={"file": (nom_fichier, contenu)}, data=champs)
 
 
 def test_api_import_cours(client: TestClient) -> None:
-    """Test 6 : upload .md → 201 avec chapitres et charge ; priorité et catégorie enregistrées
-    (défauts sinon) et modifiables ; .docx → 415 (CA1.1, CA1.6, CA1.7)."""
-    # 1. Import avec priorité et catégorie choisies avant l'upload.
-    sql = envoyer_cours(client, "SQL.md", (DONNEES_DEMO / "SQL.md").read_bytes(),
-                        priority="high", category="mixed")
+    """Test 6 : upload → 201 avec chapitres et charge ; priorité enregistrée (défaut sinon) et
+    modifiable ; catégorie calculée depuis les échéances ; .docx → 415 (CA1.1, CA1.6, CA1.7, CA2.7)."""
+    # 1. Import avec la priorité choisie avant l'upload (plus de catégorie à saisir).
+    sql = envoyer_cours(client, "SQL.md", (DONNEES_DEMO / "SQL.md").read_bytes(), priority="high")
     assert sql.status_code == 201
     corps = sql.json()
     assert corps["name"] == "SQL"
     assert len(corps["chapters"]) == 5
     assert corps["hours_total"] == sum(chapitre["hours"] for chapitre in corps["chapters"])  # CA1.5
-    assert corps["priority"] == "high" and corps["category"] == "mixed"
+    assert corps["priority"] == "high" and corps["category"] is None  # pas encore d'échéance
     # GET /courses renvoie aussi les chapitres (extension : le Planning affiche leurs titres).
     assert client.get("/courses").json()[0]["chapters"] == corps["chapters"]
 
-    # 2. Sans ces champs : valeurs par défaut (moyenne, catégorie non précisée).
+    # 2. Sans priorité : moyenne par défaut.
     python = envoyer_cours(client, "Python.md", (DONNEES_DEMO / "Python.md").read_bytes()).json()
-    assert python["priority"] == "medium" and python["category"] is None
+    assert python["priority"] == "medium"
 
     # 3. GET /courses : les deux cours, avancement à 0 tant qu'aucune session n'est faite.
     liste = client.get("/courses").json()
     assert [(c["name"], c["priority"], c["progress"]) for c in liste] == [
         ("SQL", "high", 0.0), ("Python", "medium", 0.0)]
 
-    # 4. Priorité modifiable après l'import ; la catégorie non envoyée ne change pas.
+    # 4. Priorité modifiable après l'import.
     modifie = client.patch(f"/courses/{python['id']}", json={"priority": "low"})
-    assert modifie.status_code == 200
-    assert modifie.json()["priority"] == "low" and modifie.json()["category"] is None
+    assert modifie.status_code == 200 and modifie.json()["priority"] == "low"
 
-    # 5. Erreurs : mauvais format → 415 ; priorité inconnue → 422 ; cours inconnu → 404.
+    # 5. Catégorie calculée (CA2.7) : un examen → « exam » ; + un contrôle continu → « mixed ».
+    dans_un_mois = str(datetime.now(FUSEAU).date() + timedelta(days=30))
+    examen = {"course_id": corps["id"], "title": "Examen", "type": "exam",
+              "date": dans_un_mois, "weight": 60}
+    client.post("/deadlines", json=examen)
+    assert client.get("/courses").json()[0]["category"] == "exam"
+    client.post("/deadlines", json={**examen, "title": "TP noté", "type": "assignment"})
+    assert client.get("/courses").json()[0]["category"] == "mixed"
+    assert client.get("/courses").json()[1]["category"] is None  # Python : toujours aucune date
+    client.post("/deadlines", json={**examen, "course_id": python["id"], "type": "assignment"})
+    assert client.get("/courses").json()[1]["category"] == "continuous"  # contrôle continu seul
+
+    # 6. Erreurs : mauvais format → 415 ; priorité inconnue → 422 ; cours inconnu → 404.
     assert envoyer_cours(client, "notes.docx", b"x").status_code == 415
     assert envoyer_cours(client, "a.md", b"# A texte", priority="urgent").status_code == 422
     assert client.patch("/courses/999", json={"priority": "low"}).status_code == 404
