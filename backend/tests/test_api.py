@@ -74,6 +74,8 @@ def test_api_import_cours(client: TestClient) -> None:
     assert corps["name"] == "SQL"
     assert len(corps["chapters"]) == 5 and corps["hours_total"] == 6.0
     assert corps["priority"] == "high" and corps["category"] == "mixed"
+    # GET /courses renvoie aussi les chapitres (extension : le Planning affiche leurs titres).
+    assert client.get("/courses").json()[0]["chapters"] == corps["chapters"]
 
     # 2. Sans ces champs : valeurs par défaut (moyenne, catégorie non précisée).
     python = envoyer_cours(client, "Python.md", (DONNEES_DEMO / "Python.md").read_bytes()).json()

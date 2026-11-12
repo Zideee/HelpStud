@@ -66,13 +66,27 @@ def heures_faites_par_cours(connexion: sqlite3.Connection) -> dict[int, float]:
     # ne sait pas soustraire correctement ; datetime, si.
 
 
-def resumer_cours(ligne: sqlite3.Row, heures_faites: dict[int, float]) -> CoursResume:
-    """Construit le résumé d'un cours : charge, heures faites (plafonnées) et % d'avancement."""
+def chapitres_par_cours(connexion: sqlite3.Connection) -> dict[int, list[Chapitre]]:
+    """Pour chaque cours, ses chapitres dans l'ordre (pour afficher leurs titres)."""
+    chapitres: dict[int, list[Chapitre]] = {}
+    lignes = connexion.execute("SELECT id, course_id, title, hours FROM chapters ORDER BY course_id, position")
+    for ligne in lignes:
+        chapitres.setdefault(ligne["course_id"], []).append(
+            Chapitre(id=ligne["id"], title=ligne["title"], hours=ligne["hours"]))
+    return chapitres
+    # Pourquoi une seule requête pour tous les cours : plus simple et plus rapide qu'une
+    # requête par cours ; setdefault crée la liste du cours au premier chapitre rencontré.
+
+
+def resumer_cours(ligne: sqlite3.Row, heures_faites: dict[int, float],
+                  chapitres: dict[int, list[Chapitre]]) -> CoursResume:
+    """Construit le résumé d'un cours : charge, heures faites (plafonnées), % d'avancement, chapitres."""
     total = ligne["hours_total"]
     faites = min(heures_faites.get(ligne["id"], 0.0), total)
     progression = round(faites / total * 100, 1) if total > 0 else 0.0
     return CoursResume(id=ligne["id"], name=ligne["name"], hours_total=total, hours_done=faites,
-                       progress=progression, priority=ligne["priority"], category=ligne["category"])
+                       progress=progression, priority=ligne["priority"], category=ligne["category"],
+                       chapters=chapitres.get(ligne["id"], []))
     # Pourquoi plafonner à hours_total : si l'étudiant fait plus de sessions que prévu,
     # l'avancement s'arrête à 100 % au lieu d'afficher 130 % (SPEC §5.5).
 
@@ -91,7 +105,8 @@ def lister_cours(connexion: Connexion) -> list[CoursResume]:
     """Tous les cours, avec leur avancement, dans l'ordre d'import."""
     lignes = connexion.execute(REQUETE_COURS + " GROUP BY courses.id ORDER BY courses.id").fetchall()
     heures_faites = heures_faites_par_cours(connexion)
-    return [resumer_cours(ligne, heures_faites) for ligne in lignes]
+    chapitres = chapitres_par_cours(connexion)
+    return [resumer_cours(ligne, heures_faites, chapitres) for ligne in lignes]
 
 
 @router.patch("/courses/{cours_id}")
@@ -104,7 +119,7 @@ def modifier_cours(cours_id: int, modification: ModificationCours, connexion: Co
         REQUETE_COURS + " WHERE courses.id = ? GROUP BY courses.id", (cours_id,)).fetchone()
     if ligne is None:
         raise HTTPException(status_code=404, detail="Cours inconnu")
-    return resumer_cours(ligne, heures_faites_par_cours(connexion))
+    return resumer_cours(ligne, heures_faites_par_cours(connexion), chapitres_par_cours(connexion))
     # Pourquoi exclude_unset : on distingue « champ absent » (ne rien changer) de
     # « champ envoyé à null » (effacer la catégorie).
     # Pourquoi le nom de colonne dans une f-string est sans danger ici : il vient des champs

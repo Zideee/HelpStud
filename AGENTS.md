@@ -66,7 +66,7 @@ POST   /courses              + champs de formulaire optionnels :
                                priority = high | medium | low   (défaut medium)
                                category = exam | continuous | mixed (défaut null)
                              + réponse : priority, category
-GET    /courses              + champs de réponse : priority, category
+GET    /courses              + champs de réponse : priority, category, chapters [{id, title, hours}]
 PATCH  /courses/{id}         {priority?, category?} -> 200 | 404 | 422
 GET    /plan.ics?week=...    paramètre optionnel : une seule semaine
 POST   /unavailability       {start, end, reason} -> 201          (bonus 1)

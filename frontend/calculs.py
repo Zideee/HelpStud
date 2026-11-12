@@ -4,9 +4,12 @@ PYTHON PUR : aucun import de Streamlit ni de httpx. Les pages appellent ces fonc
 ce qui permet de les tester sans navigateur ni serveur (tests 11 et 12).
 """
 
+from datetime import date, datetime
+
 PRIORITES = {"Haute": "high", "Moyenne": "medium", "Basse": "low"}
 CATEGORIES = {"Examen": "exam", "Contrôle continu": "continuous", "Mixte": "mixed", "Non précisée": None}
 TYPES_ECHEANCE = {"Examen": "exam", "Contrôle continu": "assignment"}
+JOURS_COURTS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 JOURS = {"monday": "Lundi", "tuesday": "Mardi", "wednesday": "Mercredi", "thursday": "Jeudi",
          "friday": "Vendredi", "saturday": "Samedi", "sunday": "Dimanche"}
 # Pourquoi des dictionnaires « libellé → valeur API » : l'écran parle français, l'API parle
@@ -35,3 +38,20 @@ def lire_creneaux_saisis(texte: str) -> list[str]:
 def ecrire_creneaux(creneaux: list[str]) -> str:
     """Le sens inverse : la liste du contrat → le texte à afficher dans le champ."""
     return ", ".join(creneaux)
+
+
+def semaine_iso(jour: date) -> str:
+    """La semaine ISO d'une date, au format de l'API : « AAAA-Wnn »."""
+    annee, numero, _ = jour.isocalendar()
+    return f"{annee}-W{numero:02d}"
+    # Pourquoi l'année ISO et pas jour.year : le 1er janvier 2027 appartient à la semaine 53
+    # de 2026 ; avec jour.year, on enverrait « 2027-W53 », une semaine qui n'existe pas.
+
+
+def jour_et_horaire(debut_iso: str, fin_iso: str) -> tuple[str, str]:
+    """« 2026-11-16T18:00:00+01:00 » → (« Lun 16/11 », « 18:00–19:00 »)."""
+    debut, fin = datetime.fromisoformat(debut_iso), datetime.fromisoformat(fin_iso)
+    jour = f"{JOURS_COURTS[debut.weekday()]} {debut:%d/%m}"
+    return jour, f"{debut:%H:%M}–{fin:%H:%M}"
+    # Pourquoi nos propres noms de jours : strftime(« %a ») dépend de la langue de
+    # l'ordinateur (« Mon » sur un poste en anglais) ; ici, c'est toujours en français.
