@@ -1,7 +1,12 @@
 """Import de cours : transforme un fichier Markdown ou PDF en chapitres avec une charge en heures."""
 
+import io
 import math
 from dataclasses import dataclass
+from pathlib import Path
+
+from pypdf import PdfReader
+from pypdf.errors import PyPdfError
 
 MOTS_PAR_HEURE = 200
 PAS_ARRONDI_HEURES = 0.5
@@ -12,6 +17,19 @@ CHARGE_MINIMALE_HEURES = 1.0
 PREFIXES_TITRE_MARKDOWN = ("# ", "## ")
 # Pourquoi seulement # et ## : ce sont les niveaux de chapitre décidés (Q3 de SPEC.md) ;
 # un ### est une sous-partie, donc du contenu du chapitre en cours.
+
+EXTENSIONS_ACCEPTEES = (".md", ".pdf")
+
+
+class FichierVide(ValueError):
+    """Le fichier ne contient aucun texte exploitable."""
+    # Pourquoi une exception à nous : l'API la traduira en 422 sans avoir à connaître
+    # les détails de pypdf ou de l'encodage du fichier.
+
+
+class FormatNonSupporte(ValueError):
+    """L'extension du fichier n'est ni .md ni .pdf."""
+    # Pourquoi distincte de FichierVide : l'API doit renvoyer un autre code (415).
 
 
 @dataclass(frozen=True)
@@ -80,3 +98,40 @@ def extraire_chapitres_markdown(texte: str, titre_par_defaut: str) -> list[Chapi
     # Pourquoi ce parcours ligne par ligne : on accumule le contenu jusqu'au titre suivant,
     # puis on « ferme » le chapitre. Le texte avant le 1er titre est accumulé puis jeté
     # au 1er titre (lignes_courantes = []) ; sans aucun titre, il devient le chapitre unique.
+
+
+def extraire_chapitres_pdf(contenu: bytes, titre_par_defaut: str) -> list[ChapitreImporte]:
+    """Un chapitre par page non vide du PDF, nommé « Page N »."""
+    try:
+        pages = PdfReader(io.BytesIO(contenu)).pages
+        textes = [page.extract_text() or "" for page in pages]
+    except PyPdfError as erreur:
+        raise FichierVide(f"PDF illisible : {erreur}") from erreur
+    chapitres = [
+        creer_chapitre(f"Page {numero}", [texte])
+        for numero, texte in enumerate(textes, start=1)
+        if compter_mots(texte) > 0
+    ]
+    if not chapitres:
+        raise FichierVide("Le PDF ne contient aucun texte (scan ou pages blanches ?)")
+    return chapitres
+    # Pourquoi une page = un chapitre : un PDF n'a pas de « # » ; c'est la version simple
+    # du P0, la détection des titres « Chapitre N » vient en P1-01 (titre_par_defaut y servira).
+    # Pourquoi attraper PyPdfError : un faux PDF ne doit pas faire planter l'API (erreur 500).
+
+
+def importer_cours(nom_fichier: str, contenu: bytes) -> tuple[str, list[ChapitreImporte]]:
+    """Renvoie (nom du cours, chapitres) selon l'extension du fichier."""
+    chemin = Path(nom_fichier)
+    extension = chemin.suffix.lower()
+    if extension not in EXTENSIONS_ACCEPTEES:
+        raise FormatNonSupporte(f"Format {extension or 'inconnu'} non supporté : .md ou .pdf")
+    if extension == ".pdf":
+        return chemin.stem, extraire_chapitres_pdf(contenu, chemin.stem)
+    texte = contenu.decode("utf-8-sig", errors="replace")
+    if compter_mots(texte) == 0:
+        raise FichierVide("Le fichier Markdown est vide")
+    return chemin.stem, extraire_chapitres_markdown(texte, chemin.stem)
+    # Pourquoi tester le format en premier : un .docx vide doit dire « mauvais format »
+    # (415), pas « fichier vide ». Pourquoi utf-8-sig : le Bloc-notes de Windows ajoute
+    # parfois un caractère invisible (BOM) au début, qui serait collé au premier titre.
