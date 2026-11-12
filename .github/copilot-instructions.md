@@ -41,10 +41,11 @@ Erreurs : `POST /courses` → `415` format non supporté, `422` fichier vide ;
 ## Extensions HelpStud
 
 ```
-POST   /courses              + form fields optionnels priority (high|medium|low, défaut medium)
-                               et category (exam|continuous|mixed, défaut null) ; réponse + priority, category
-GET    /courses              + priority, category, chapters [{id, title, hours}]
-PATCH  /courses/{id}         {priority?, category?} -> 200 | 404 | 422
+POST   /courses              + form field optionnel priority (high|medium|low, défaut medium) ;
+                               réponse + priority, category (calculée depuis les échéances)
+GET    /courses              + priority, category (calculée), chapters [{id, title, hours}]
+PATCH  /courses/{id}         {priority} -> 200 | 404 | 422
+POST / DELETE /deadlines     réponses inchangées ; replanifient les semaines déjà planifiées
 GET    /plan.ics?week=...    optionnel : une seule semaine
 POST   /unavailability       {start, end, reason} -> 201   (bonus)
 GET    /unavailability ; DELETE /unavailability/{id} -> 204 (bonus)
@@ -54,7 +55,9 @@ Formats : type d'échéance `exam` | `assignment` ; dates `YYYY-MM-DD` ; dates-h
 avec décalage, fuseau Europe/Paris ; semaine `"2026-W47"` ; `progress` de 0 à 100.
 
 ## Règles métier clés
-- Charge : `mots / 200` h, arrondi au 0,5 h supérieur, minimum 1 h par chapitre.
+- Charge : `lignes non vides / 40` h, arrondi au 0,5 h supérieur, minimum 1 h par chapitre.
+- Catégorie d'un cours : jamais saisie, calculée depuis ses échéances (exam / continuous / mixed / null).
+- L'écran Import n'accepte que les PDF (l'API garde aussi le Markdown).
 - Priorité : `score = weight × coef / jours_restants` (coef haute 2, moyenne 1, basse 0,5 ;
   `jours_restants` ≥ 1) ; cours sans échéance planifiés en dernier.
 - Une session finit avant le jour de l'échéance, jamais dans un créneau occupé ou passé.

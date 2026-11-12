@@ -26,21 +26,23 @@ Une tâche est finie quand **toutes** ces cases sont cochées :
 ## 3. MVP — les 5 blocs (tous obligatoires)
 
 ### Bloc 1 — Importer ses cours
-- **CA1.1** Upload d'un fichier `.md` ou `.pdf` → un cours est créé avec ses chapitres.
-  Le nom du cours = le nom du fichier sans extension.
+- **CA1.1** L'écran Import accepte **uniquement des PDF** *(décision équipe : les étudiants
+  n'ont pas leurs cours en Markdown)*. L'API accepte aussi `.md`, car la spec officielle
+  l'exige et les données de démo communes sont en Markdown. Un cours est créé avec ses
+  chapitres ; son nom = le nom du fichier sans extension.
 - **CA1.2** Markdown : chaque titre `#` ou `##` devient un chapitre, dans l'ordre du
   fichier. Un fichier sans titre donne un seul chapitre, nommé comme le cours.
 - **CA1.3** PDF : le texte est extrait avec `pypdf`. Chaque ligne du type
   « Chapitre N … » ou « 1. Titre » commence un chapitre ; s'il n'y en a aucune,
   on crée **un chapitre par page**.
-- **CA1.4** Chaque chapitre a une charge estimée en heures (règle de charge, §5.1).
+- **CA1.4** Chaque chapitre a une charge estimée en heures, calculée à partir de son
+  **nombre de lignes** (règle de charge, §5.1).
 - **CA1.5** La réponse contient `hours_total` = somme des charges des chapitres.
 - **CA1.6** Un autre format de fichier est refusé avec `415` ; un fichier vide avec `422`.
-- **CA1.7** *(ajout HelpStud)* **Avant** d'envoyer le fichier, l'étudiant choisit :
-  - la **priorité** du cours : haute, moyenne ou basse (par défaut moyenne) ;
-  - la **catégorie** du cours : examen, contrôle continu ou mixte (§5.4).
-
-  Les deux sont enregistrées avec le cours et modifiables ensuite.
+- **CA1.7** *(ajout HelpStud)* **Avant** d'envoyer le fichier, l'étudiant choisit la
+  **priorité** du cours : haute, moyenne ou basse (par défaut moyenne). Elle est
+  enregistrée avec le cours et modifiable ensuite. L'étudiant ne saisit **pas** de
+  catégorie : elle est déduite de ses échéances (CA2.7, §5.4).
 
 ### Bloc 2 — Échéances et disponibilités
 - **CA2.1** Créer (`201`), lister (triées par date), supprimer (`204`) une échéance.
@@ -53,6 +55,12 @@ Une tâche est finie quand **toutes** ces cases sont cochées :
   le type `assignment` = contrôle continu.
 - **CA2.6** *(ajout HelpStud)* Les échéances sont **optionnelles** : un cours sans
   examen ni contrôle continu daté reste utilisable et peut être planifié (§5.2).
+- **CA2.7** *(ajout HelpStud)* La **catégorie** d'un cours (examen, contrôle continu,
+  mixte ou sans échéance) est **calculée** à partir de ses échéances (§5.4) ; elle sert
+  à classer les cours.
+- **CA2.8** *(ajout HelpStud)* L'étudiant peut ajouter ou supprimer une date d'examen ou
+  de contrôle continu **à tout moment** (souvent, il ne la connaît pas au début) ; le
+  planning se met alors à jour tout seul (CA3.9).
 
 ### Bloc 3 — Planning hebdo
 - **CA3.1** `POST /plan/generate` place des sessions de `session_minutes`
@@ -70,6 +78,10 @@ Une tâche est finie quand **toutes** ces cases sont cochées :
 - **CA3.7** Relancer `generate` sur une semaine **remplace** ses sessions non faites ;
   les sessions faites restent et occupent leur créneau.
 - **CA3.8** Pour la semaine en cours, les créneaux déjà passés sont ignorés.
+- **CA3.9** *(ajout HelpStud)* **Replanification automatique** : créer ou supprimer une
+  échéance relance la génération de chaque semaine **déjà planifiée**, à partir de la
+  semaine en cours. Les sessions faites ne bougent pas (même règle que CA3.7) ; la
+  nouvelle date et la priorité sont donc prises en compte sans clic supplémentaire.
 
 ### Bloc 4 — Export .ics
 - **CA4.1** `GET /plan.ics` renvoie le type `text/calendar`, avec **toutes** les
@@ -86,8 +98,9 @@ Une tâche est finie quand **toutes** ces cases sont cochées :
   une session finie dans le passé et pas marquée faite.
 - **CA5.3** On peut marquer une session comme faite (et revenir en arrière).
 - **CA5.4** Le front n'appelle **que** l'API HTTP, via le seul module `frontend/api_client.py`.
-- **CA5.5** *(ajout HelpStud)* L'écran Import demande la priorité et la catégorie
-  **avant** l'upload ; le dashboard affiche et permet de filtrer par catégorie.
+- **CA5.5** *(ajout HelpStud)* L'écran Import demande la priorité **avant** l'upload et
+  n'accepte que des PDF ; le dashboard affiche la catégorie calculée de chaque cours
+  (et permet de filtrer par catégorie, P1).
 
 ## 4. Contrat d'API
 
@@ -99,7 +112,7 @@ Précisions que nous ajoutons (codes d'erreur) :
 
 | Route | Succès | Erreurs prévues |
 |---|---|---|
-| `POST /courses` | `201` | `415` format non supporté, `422` fichier vide ou priorité / catégorie inconnue |
+| `POST /courses` | `201` | `415` format non supporté, `422` fichier vide ou priorité inconnue |
 | `POST /deadlines` | `201` | `422` date passée / type inconnu / poids hors 0–100, `404` cours inconnu |
 | `DELETE /deadlines/{id}` | `204` | `404` échéance inconnue |
 | `PUT /availability` | `200` + l'objet enregistré | `422` créneau mal formé ou fin ≤ début |
@@ -110,9 +123,11 @@ Extensions HelpStud (elles **ajoutent** des champs ou des routes, sans rien reti
 
 | Ajout | Détail | Bloc |
 |---|---|---|
-| `POST /courses` : champs de formulaire optionnels `priority` et `category` | `priority` ∈ `high` / `medium` / `low` (défaut `medium`) ; `category` ∈ `exam` / `continuous` / `mixed` (défaut `null` = non précisée). Sans ces champs, la route marche comme avant. | MVP |
-| `POST /courses` et `GET /courses` : champs de réponse `priority` et `category` | Mêmes valeurs que ci-dessus | MVP |
-| `PATCH /courses/{id}` `{priority, category}` | Modifier l'un ou l'autre après l'import → `200`, `404`, `422` | MVP |
+| `POST /courses` : champ de formulaire optionnel `priority` | `high` / `medium` / `low` (défaut `medium`). Sans ce champ, la route marche comme avant. | MVP |
+| `POST /courses` et `GET /courses` : champs de réponse `priority` et `category` | `category` est **calculée** (§5.4) : `exam` / `continuous` / `mixed`, ou `null` sans échéance. Ce n'est plus un champ d'entrée. | MVP |
+| `GET /courses` : champ de réponse `chapters` `[{id, title, hours}]` | Les titres des chapitres, pour la page Planning | MVP |
+| `PATCH /courses/{id}` `{priority}` | Modifier la priorité après l'import → `200`, `404`, `422` | MVP |
+| `POST /deadlines` et `DELETE /deadlines/{id}` | Réponses inchangées ; **effet en plus** : replanification automatique des semaines déjà planifiées (CA3.9) | MVP |
 | `GET /plan.ics?week=2026-W47` | Paramètre optionnel : n'exporter qu'une semaine | MVP |
 | `POST /unavailability` `{start, end, reason}` → `201` | Créneau occupé ponctuel ; replanifie la semaine concernée | Bonus 1 |
 | `GET /unavailability`, `DELETE /unavailability/{id}` → `204` | Lister / supprimer les indisponibilités | Bonus 1 |
@@ -122,13 +137,17 @@ contrat ; c'est le front qui les affiche en français (« haute », « examen »
 
 ## 5. Règles métier
 
-### 5.1 Règle de charge (import)
-- On compte les **mots du contenu** du chapitre (le texte sous son titre).
-- `heures = mots / 200` (200 mots étudiés par heure).
+### 5.1 Règle de charge (import) — *par lignes, décision de l'équipe*
+- On compte les **lignes non vides du contenu** du chapitre (le titre n'est pas compté).
+  Pour un PDF sans titre détecté, le chapitre est la page : on compte ses lignes.
+- `heures = lignes / 40` (**40 lignes étudiées par heure**).
 - **Arrondi au 0,5 h supérieur**, puis **minimum 1 h** par chapitre.
   Pourquoi au supérieur : mieux vaut surestimer le travail que le sous-estimer.
-- Exemples : 120 mots → 0,6 h → 1 h (minimum) ; 450 mots → 2,25 h → 2,5 h ;
-  600 mots → 3 h.
+- Exemples : 10 lignes → 0,25 h → 1 h (minimum) ; 41 lignes → 1,025 h → 1,5 h ;
+  90 lignes → 2,25 h → 2,5 h ; 120 lignes → 3 h.
+- Pourquoi les lignes plutôt que les mots *(remplace la règle « 200 mots/h » du Sprint 1)* :
+  c'est ce que l'étudiant voit sur sa feuille ; une page dense prend plus de temps
+  qu'une page aérée.
 
 ### 5.2 Règle de priorité (planificateur)
 - `score = weight × coef_priorité / jours_restants_avant_échéance`, **le plus haut d'abord**.
@@ -156,14 +175,20 @@ contrat ; c'est le front qui les affiche en français (« haute », « examen »
   ISO 8601 avec décalage, ex. `2026-11-16T18:00:00+01:00`.
 - Dates d'échéance au format `YYYY-MM-DD`.
 
-### 5.4 Catégorie d'un cours (choisie par l'étudiant)
-- Valeurs : examen (`exam`), contrôle continu (`continuous`), mixte (`mixed`).
-- Elle est choisie **à l'import**, car l'étudiant connaît souvent le mode d'évaluation
-  avant les dates (qui sont optionnelles, CA2.6).
-- Elle **ne change pas** le calcul du planning : elle sert à classer et filtrer les
-  cours dans le dashboard.
-- Elle est indépendante du type des échéances : aucun contrôle de cohérence
-  (un cours « examen » peut avoir une échéance `assignment`), pour rester simple.
+### 5.4 Catégorie d'un cours (calculée, jamais saisie) — *décision de l'équipe*
+On ne la stocke pas : elle se déduit des échéances, donc elle ne peut pas être fausse.
+
+| Échéances du cours | Catégorie |
+|---|---|
+| au moins un `exam`, aucun `assignment` | `exam` (examen) |
+| au moins un `assignment`, aucun `exam` | `continuous` (contrôle continu) |
+| les deux | `mixed` (mixte) |
+| aucune | `null` (sans échéance) |
+
+- Elle **ne change pas** le calcul du planning : ce sont les **dates** et les **poids**
+  des échéances (et la priorité) qui le changent (§5.2). Elle sert à classer les cours.
+- *(Remplace le choix « catégorie saisie à l'import » du Sprint 1 : l'étudiant n'a qu'à
+  entrer ses dates, quand il les connaît.)*
 
 ### 5.5 Avancement d'un cours
 - `hours_done` = somme des durées des sessions **faites** du cours, plafonnée à `hours_total`.
@@ -201,7 +226,7 @@ contrat ; c'est le front qui les affiche en français (« haute », « examen »
 
 | # | Fichier | Nom du test | Type | Ce qu'il prouve |
 |---|---|---|---|---|
-| 1 | `test_importer.py` | `test_import_markdown_chapitres_et_charge` | Technique | `#` et `##` → chapitres dans l'ordre ; nom = nom du fichier ; 200 mots/h, arrondi au 0,5 h supérieur, min 1 h ; `.docx` refusé (CA1.1, CA1.2, CA1.4, CA1.6). |
+| 1 | `test_importer.py` | `test_import_pdf_chapitres_et_charge` | Technique | PDF → un chapitre par page non vide ; nom = nom du fichier ; 40 lignes/h, arrondi au 0,5 h supérieur, min 1 h ; le Markdown reste accepté par le service ; `.docx` refusé (CA1.1 à CA1.4, CA1.6). |
 | 2 | `test_planner.py` | `test_planning_respecte_les_creneaux` | Technique | Sessions dans les créneaux libres, hors créneaux occupés, sans chevauchement, finies avant le jour de l'échéance ; créneau trop court ou aucune dispo → `[]` (CA3.1 à CA3.3). |
 | 3 | `test_planner.py` | `test_planning_respecte_la_priorite` | Technique | Exemple 1 du §5.2 (priorité haute avant échéance plus proche) ; cours sans échéance en dernier ; cours à l'examen passé non planifié (CA3.4, CA3.6). |
 | 4 | `test_ics_export.py` | `test_ics_valide_et_heures_paris` | Technique | Le `.ics` se relit, 1 `VEVENT` par session, résumé = cours + chapitre, 18:00 Paris en hiver = 17:00 UTC (CA4.2, CA4.3). |
@@ -211,8 +236,8 @@ contrat ; c'est le front qui les affiche en français (« haute », « examen »
 | # | Fichier | Nom du test | Type | Ce qu'il prouve |
 |---|---|---|---|---|
 | 5 | `test_api.py` | `test_api_echeances` | Fonctionnel | Création `201`, liste triée par date, suppression `204` ; date passée → `422` ; cours inconnu → `404` (CA2.1 à CA2.3). |
-| 6 | `test_api.py` | `test_api_import_cours` | Fonctionnel | Upload `.md` → `201` avec chapitres et `hours_total` ; priorité et catégorie enregistrées, valeurs par défaut sinon ; `.docx` → `415` (CA1.1, CA1.6, CA1.7). |
-| 7 | `test_api.py` | `test_api_regeneration_garde_les_sessions_faites` | Fonctionnel | Relancer `generate` ne duplique pas les sessions non faites et ne déplace pas une session faite (CA3.7, CA5.3). |
+| 6 | `test_api.py` | `test_api_import_cours` | Fonctionnel | Upload → `201` avec chapitres et `hours_total` ; priorité enregistrée (défaut sinon) et modifiable ; catégorie `null` puis calculée après ajout d'un examen ; `.docx` → `415` (CA1.1, CA1.6, CA1.7, CA2.7). |
+| 7 | `test_api.py` | `test_api_regeneration_garde_les_sessions_faites` | Fonctionnel | Relancer `generate` remplace les sessions non faites sans doublon et ne déplace pas une session faite ; ajouter une échéance replanifie tout seul (CA3.7, CA3.9, CA5.3). |
 | 8 | `test_parcours.py` | `test_parcours_complet_progression` | Fonctionnel | De bout en bout : upload → échéance → disponibilités → generate → `PATCH done` → `GET /courses` montre une progression > 0 → `GET /plan.ics` en `text/calendar` (blocs 1 à 4). |
 
 ### Front (P0-12 à P0-16)
@@ -225,7 +250,7 @@ petit module pur `frontend/calculs.py`.
 |---|---|---|---|---|
 | 9 | `frontend/tests/test_api_client.py` | `test_client_appelle_les_routes_du_contrat` | Technique | Chaque fonction appelle la bonne méthode et la bonne route, avec le bon corps JSON (CA5.4). |
 | 10 | `frontend/tests/test_api_client.py` | `test_client_erreurs_lisibles` | Fonctionnel | Une réponse `422` / `404` ou un back éteint lèvent `ErreurApi` avec un message lisible, jamais une trace Python. |
-| 11 | `frontend/tests/test_calculs.py` | `test_semaine_iso_et_libelles` | Technique | Une date → `"AAAA-Wnn"` ; libellés français ↔ valeurs API (Haute ↔ `high`, Contrôle continu ↔ `assignment`…) (CA1.7, CA2.5). |
+| 11 | `frontend/tests/test_calculs.py` | `test_semaine_iso_et_libelles` | Technique | Une date → `"AAAA-Wnn"` ; libellés français ↔ valeurs API (Haute ↔ `high`, Contrôle continu ↔ `assignment`, catégorie calculée → libellé) (CA1.7, CA2.5, CA2.7). |
 | 12 | `frontend/tests/test_calculs.py` | `test_indicateurs_dashboard` | Fonctionnel | Sessions faites / en retard (finie, passée, non faite) et 3 prochaines échéances à partir de données de l'API (CA5.2). |
 
 Hors des 12 : le test du bonus 1 (indisponibilités) sera ajouté au Sprint 3 si le PO le valide.
@@ -276,7 +301,10 @@ Dates des sprints et du gel : **à fixer** (seule question encore ouverte).
 | Q11 | Session en retard | Finie dans le passé, pas faite | CA5.2 |
 | Q12 | Contenu de `plan.ics` | Toutes les sessions, `?week=` optionnel | CA4.1 |
 | — | Priorité des cours | Multiplicateur ×2 / ×1 / ×0,5, choisi avant l'upload | CA1.7, §5.2 |
-| — | Examen / contrôle continu | Champ choisi par l'étudiant à l'import, sans effet sur le planning | CA1.7, §5.4 |
+| — | Examen / contrôle continu | ~~Champ choisi à l'import~~ → **catégorie calculée** à partir des dates d'examen et de contrôle continu, optionnelles (après Sprint 1) | CA2.7, §5.4 |
+| — | Format des cours | **PDF seul** dans l'écran ; l'API garde le Markdown (spec officielle, démo) (après Sprint 1) | CA1.1 |
+| — | Règle de charge | **40 lignes / heure** au lieu de 200 mots / heure (après Sprint 1) | §5.1 |
+| — | Dates ajoutées plus tard | **Replanification automatique** des semaines déjà planifiées (après Sprint 1) | CA2.8, CA3.9 |
 | — | Échéances | Fixées par l'étudiant, optionnelles | CA2.5, CA2.6 |
 | — | Calendrier qui bouge | Indisponibilités ponctuelles, bonus 1 | §7 |
 | **Q13** | **Dates des sprints et du gel** | **Ouverte** | §9 |

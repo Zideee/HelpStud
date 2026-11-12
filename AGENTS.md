@@ -62,17 +62,22 @@ GET    /plan.ics             -> text/calendar
 ### 3.3 Extensions HelpStud (ajouts, rien n'est retiré)
 
 ```
-POST   /courses              + champs de formulaire optionnels :
+POST   /courses              + champ de formulaire optionnel :
                                priority = high | medium | low   (défaut medium)
-                               category = exam | continuous | mixed (défaut null)
-                             + réponse : priority, category
+                             + réponse : priority, category (CALCULÉE, voir ci-dessous)
 GET    /courses              + champs de réponse : priority, category, chapters [{id, title, hours}]
-PATCH  /courses/{id}         {priority?, category?} -> 200 | 404 | 422
+PATCH  /courses/{id}         {priority} -> 200 | 404 | 422
+POST   /deadlines            réponse inchangée ; effet en plus : replanifie les semaines déjà planifiées
+DELETE /deadlines/{id}       réponse inchangée ; effet en plus : replanifie les semaines déjà planifiées
 GET    /plan.ics?week=...    paramètre optionnel : une seule semaine
 POST   /unavailability       {start, end, reason} -> 201          (bonus 1)
 GET    /unavailability       -> liste                              (bonus 1)
 DELETE /unavailability/{id}  -> 204                                (bonus 1)
 ```
+
+`category` n'est **jamais saisie** : elle est calculée à partir des échéances du cours
+(`exam` seul → `exam`, `assignment` seul → `continuous`, les deux → `mixed`, aucune → `null`).
+L'écran Import n'accepte que les PDF ; l'API accepte aussi `.md` (spec officielle, démo).
 
 ### 3.4 Formats
 
