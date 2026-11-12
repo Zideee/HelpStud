@@ -171,3 +171,100 @@ def lister_sessions_candidates(semaine: str, disponibilites: Disponibilites,
     # Pourquoi traiter « le passé » comme un créneau occupé : on réutilise la même règle
     # au lieu d'écrire un deuxième filtre (CA3.8). Si maintenant est avant la semaine,
     # l'intervalle est « à l'envers » et soustraire() ne retire rien.
+
+
+def prochaine_echeance(cours: CoursAPlanifier, jour: date) -> EcheanceAPlanifier | None:
+    """L'échéance la plus proche strictement après `jour`, ou None."""
+    a_venir = [echeance for echeance in cours.echeances if echeance.date > jour]
+    if not a_venir:
+        return None
+    return min(a_venir, key=lambda echeance: echeance.date)
+    # Pourquoi « strictement après » : le jour d'une échéance, on ne révise plus pour elle
+    # (CA3.3 : une session doit finir avant ce jour). C'est donc la suivante qui compte.
+
+
+def calculer_score(cours: CoursAPlanifier, jour: date) -> float | None:
+    """weight × coef_priorité / jours_restants (min 1). None si aucune échéance à venir."""
+    echeance = prochaine_echeance(cours, jour)
+    if echeance is None:
+        return None
+    jours_restants = max(1, (echeance.date - jour).days)
+    return echeance.poids * COEF_PRIORITE[cours.priorite] / jours_restants
+    # Pourquoi max(1, …) : protège d'une division par zéro si la règle « strictement
+    # après » change un jour ; avec la règle actuelle, jours_restants vaut déjà au moins 1.
+
+
+def est_eligible(cours: CoursAPlanifier, session: Intervalle, minutes_restantes: int) -> bool:
+    """Vrai s'il reste du travail et si la session finit avant le jour de l'échéance."""
+    if minutes_restantes <= 0:
+        return False
+    if not cours.echeances:
+        return True
+    echeance = prochaine_echeance(cours, session.debut.date())
+    if echeance is None:
+        return False
+    limite = datetime.combine(echeance.date, time(0, 0), tzinfo=FUSEAU)
+    return session.fin <= limite
+    # Pourquoi distinguer « aucune échéance » et « échéances toutes passées » : un cours
+    # sans échéance est planifié en dernier (CA3.6) ; un cours dont l'examen est passé
+    # est terminé, le réviser n'aurait plus de sens.
+
+
+def cle_de_priorite(cours: CoursAPlanifier, jour: date) -> tuple[int, float, int]:
+    """Clé de tri : le plus petit tuple passe en premier."""
+    score = calculer_score(cours, jour)
+    if score is not None:
+        return (0, -score, cours.id)
+    return (1, -COEF_PRIORITE[cours.priorite], cours.id)
+    # Pourquoi un tuple : Python compare d'abord le 1er élément (0 = avec échéance, avant
+    # 1 = sans), puis le 2e (score négatif → le plus grand score d'abord), puis l'id pour
+    # départager. Ainsi le résultat est toujours le même pour les mêmes données.
+
+
+def minutes_restantes_du_cours(cours: CoursAPlanifier, minutes: dict[int, int]) -> int:
+    """Total des minutes encore à placer pour tous les chapitres du cours."""
+    return sum(max(0, minutes[chapitre.id]) for chapitre in cours.chapitres)
+
+
+def choisir_cours(liste_cours: list[CoursAPlanifier], session: Intervalle,
+                  minutes: dict[int, int]) -> CoursAPlanifier | None:
+    """Le cours éligible le plus prioritaire pour cette session, ou None."""
+    eligibles = [
+        cours for cours in liste_cours
+        if est_eligible(cours, session, minutes_restantes_du_cours(cours, minutes))
+    ]
+    if not eligibles:
+        return None
+    jour = session.debut.date()
+    return min(eligibles, key=lambda cours: cle_de_priorite(cours, jour))
+    # Pourquoi recalculer à chaque session : le score dépend du jour (jours_restants
+    # diminue au fil de la semaine) et des minutes déjà placées.
+
+
+def premier_chapitre_a_placer(cours: CoursAPlanifier, minutes: dict[int, int]) -> ChapitreAPlanifier:
+    """Le premier chapitre du cours (dans l'ordre) qui a encore des minutes à placer."""
+    return next(chapitre for chapitre in cours.chapitres if minutes[chapitre.id] > 0)
+    # Pourquoi next() sans valeur par défaut : on n'appelle cette fonction que pour un cours
+    # éligible, qui a donc forcément un chapitre avec des minutes restantes.
+
+
+def generer_planning(semaine: str, cours: list[CoursAPlanifier],
+                     disponibilites: Disponibilites,
+                     creneaux_occupes: list[Intervalle],
+                     maintenant: datetime) -> list[SessionPlanifiee]:
+    """Place les sessions de la semaine, de façon gloutonne, par score décroissant."""
+    candidates = lister_sessions_candidates(semaine, disponibilites, creneaux_occupes, maintenant)
+    minutes = {chapitre.id: chapitre.minutes_restantes for c in cours for chapitre in c.chapitres}
+    sessions: list[SessionPlanifiee] = []
+    for creneau in candidates:
+        choisi = choisir_cours(cours, creneau, minutes)
+        if choisi is None:
+            continue
+        chapitre = premier_chapitre_a_placer(choisi, minutes)
+        sessions.append(SessionPlanifiee(choisi.id, chapitre.id, creneau.debut, creneau.fin))
+        minutes[chapitre.id] -= disponibilites.minutes_session
+    return sessions
+    # Pourquoi « glouton » : chaque session va au meilleur cours du moment, sans revenir en
+    # arrière. Ce n'est pas optimal en théorie, mais c'est simple, rapide et explicable (SPEC §5.2).
+    # Pourquoi une copie des minutes dans un dict : les dataclasses sont figées, et on ne veut
+    # pas modifier les données reçues.
