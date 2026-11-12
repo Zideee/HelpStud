@@ -6,10 +6,12 @@ ce qui permet de les tester sans navigateur ni serveur (tests 11 et 12).
 
 import calendar
 import re
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 FUSEAU = ZoneInfo("Europe/Paris")
+SEMAINES_SANS_ECHEANCE = 4   # semaines planifiées quand aucune échéance n'est à venir
+SEMAINES_MAX = 8             # jamais plus : au-delà, les disponibilités auront sûrement changé
 PRIORITES = {"Haute": "high", "Moyenne": "medium", "Basse": "low"}
 CATEGORIES = {"Examen": "exam", "Contrôle continu": "continuous", "Mixte": "mixed", "Sans échéance": None}
 # CATEGORIES ne sert plus qu'à l'AFFICHAGE : la catégorie est calculée par l'API (CA2.7).
@@ -116,6 +118,19 @@ def compter_sessions(sessions: list[dict], maintenant: datetime) -> tuple[int, i
     return faites, en_retard
     # Pourquoi comparer la FIN de la session : une session commencée mais pas terminée
     # n'est pas encore « en retard » (CA5.2, décision Q11 de SPEC.md).
+
+
+def semaines_a_generer(aujourdhui: date, echeances: list[dict]) -> list[str]:
+    """Semaines « AAAA-Wnn » à planifier, dans l'ordre : de cette semaine à celle de la dernière échéance à venir."""
+    lundi = aujourdhui - timedelta(days=aujourdhui.weekday())
+    a_venir = [date.fromisoformat(echeance["date"]) for echeance in echeances
+               if date.fromisoformat(echeance["date"]) >= aujourdhui]
+    derniere = max(a_venir) if a_venir else lundi + timedelta(weeks=SEMAINES_SANS_ECHEANCE - 1)
+    nombre = min((derniere - lundi).days // 7 + 1, SEMAINES_MAX)
+    return [semaine_iso(lundi + timedelta(weeks=numero)) for numero in range(nombre)]
+    # Pourquoi toutes les semaines d'un coup, dans l'ordre : l'API génère une semaine à la fois
+    # et compte ce qui est déjà placé ; générer seulement une semaine lointaine oubliait les
+    # cours dont l'examen tombe avant (bug vu avec 2 cours).
 
 
 def grille_du_mois(annee: int, mois: int) -> list[list[date]]:

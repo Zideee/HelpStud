@@ -5,7 +5,14 @@ from datetime import date, timedelta
 import streamlit as st
 
 import api_client
-from calculs import JOURS_COURTS, grille_du_mois, jour_et_horaire, semaine_iso, sessions_par_date
+from calculs import (
+    JOURS_COURTS,
+    grille_du_mois,
+    jour_et_horaire,
+    semaine_iso,
+    semaines_a_generer,
+    sessions_par_date,
+)
 from ui import entete
 
 NOMS_DES_MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
@@ -71,23 +78,29 @@ col_suiv.button("", icon=":material/chevron_right:", help="Période suivante", w
 col_aujourdhui.button("Aujourd'hui", icon=":material/today:", width="stretch",
                       on_click=deplacer, args=(date.today(),))
 
-# --- 2. Actions : générer (vue Semaine), exporter --------------------------------------------------
+# --- 2. Actions : générer tout le planning, exporter -------------------------------------------------
+a_generer = semaines_a_generer(date.today(), echeances)
 col_generer, col_export = st.columns(2)
-generer = col_generer.button("Générer les sessions de la semaine", type="primary", icon=":material/autorenew:",
-                             width="stretch", disabled=vue != "Semaine",
-                             help="Place vos sessions dans vos créneaux libres de la semaine affichée.")
+generer = col_generer.button("Générer mon planning", type="primary", icon=":material/autorenew:", width="stretch",
+                             help=f"Place vos sessions de cette semaine jusqu'à votre dernière échéance "
+                                  f"({len(a_generer)} semaine(s)). Les sessions déjà faites ne bougent pas.")
 col_export.download_button("Ajouter à mon agenda (.ics)", data=api_client.telecharger_ics(),
                            file_name="helpstud.ics", mime="text/calendar", icon=":material/download:",
                            width="stretch", help="À importer dans Google Agenda ou Outlook.")
-# Pourquoi générer seulement en vue Semaine : l'API génère une semaine à la fois (contrat) ;
-# on évite qu'un clic en vue Mois recalcule une semaine que l'étudiant ne voit pas.
+
+if generer:
+    try:
+        nombre_places = sum(len(api_client.generer_planning(semaine)) for semaine in a_generer)
+    except api_client.ErreurApi as erreur:
+        st.error(erreur.message, icon=":material/error:")
+    else:
+        st.toast(f"{nombre_places} sessions placées sur {len(a_generer)} semaine(s).", icon=":material/check_circle:")
+# Pourquoi toutes les semaines, dans l'ordre : l'API génère une semaine à la fois et tient
+# compte de ce qui est déjà placé avant ; générer une seule semaine oubliait un cours dont
+# l'examen tombait plus tôt (bug vu avec 2 cours). Les sessions faites ne sont jamais touchées.
 
 try:
-    if generer:
-        sessions = api_client.generer_planning(semaine_iso(semaines[0][0]))
-        st.toast(f"{len(sessions)} sessions placées.", icon=":material/check_circle:")
-    else:
-        sessions = [session for semaine in semaines for session in api_client.lire_planning(semaine_iso(semaine[0]))]
+    sessions = [session for semaine in semaines for session in api_client.lire_planning(semaine_iso(semaine[0]))]
 except api_client.ErreurApi as erreur:
     st.error(erreur.message, icon=":material/error:")
     st.stop()
@@ -97,9 +110,9 @@ rangees = sessions_par_date(sessions)
 if sessions:
     faites = sum(1 for session in sessions if session["done"])
     st.progress(faites / len(sessions), text=f"{faites} session(s) faite(s) sur {len(sessions)} sur la période")
-elif vue == "Semaine":
-    st.info("Aucune session cette semaine : renseignez vos créneaux libres, puis cliquez sur "
-            "« Générer les sessions de la semaine ».", icon=":material/info:")
+else:
+    st.info("Aucune session sur cette période : renseignez vos créneaux libres, puis cliquez sur "
+            "« Générer mon planning ».", icon=":material/info:")
     st.page_link("ecrans/2_Echeances.py", label="Renseigner mes disponibilités", icon=":material/schedule:")
 
 

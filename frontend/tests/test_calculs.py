@@ -20,6 +20,7 @@ from calculs import (
     prochaine_session,
     prochaines_echeances,
     semaine_iso,
+    semaines_a_generer,
     sessions_par_date,
 )
 
@@ -72,6 +73,13 @@ def test_semaine_iso_et_libelles() -> None:
     # Les sessions sont rangées par date, dans l'ordre des heures, pour les poser dans les cases.
     sessions = [{"start": "2026-11-16T19:00:00+01:00"}, {"start": "2026-11-18T14:00:00+01:00"},
                 {"start": "2026-11-16T18:00:00+01:00"}]
+    # « Générer mon planning » : de cette semaine jusqu'à la semaine de la dernière échéance à venir,
+    # dans l'ordre (sinon un cours dont l'examen est proche n'est jamais planifié).
+    jeudi = date(2026, 11, 12)
+    echeances = [{"date": "2026-11-27"}, {"date": "2026-11-20"}, {"date": "2026-11-01"}]  # la 3e est passée
+    assert semaines_a_generer(jeudi, echeances) == ["2026-W46", "2026-W47", "2026-W48"]
+    assert semaines_a_generer(jeudi, []) == ["2026-W46", "2026-W47", "2026-W48", "2026-W49"]  # 4 par défaut
+    assert len(semaines_a_generer(jeudi, [{"date": "2027-06-30"}])) == 8  # jamais plus de 8 semaines
     par_date = sessions_par_date(sessions)
     assert list(par_date) == [date(2026, 11, 16), date(2026, 11, 18)]
     assert [s["start"][11:16] for s in par_date[date(2026, 11, 16)]] == ["18:00", "19:00"]
