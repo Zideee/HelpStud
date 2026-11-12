@@ -38,7 +38,8 @@ def creer_pdf(pages: list[list[str]]) -> bytes:
 
 def test_import_pdf_chapitres_et_charge() -> None:
     """PDF → un chapitre par page non vide ; 40 lignes/h, arrondi au 0,5 h sup., min 1 h ;
-    Markdown toujours accepté par le service ; .docx refusé."""
+    Markdown toujours accepté par le service ; titres de PDF par mot-clé ou numéro (C-03),
+    sinon une page = un chapitre ; .docx refusé."""
     # 1. Un PDF de 3 pages : 90 lignes, une page blanche, 10 lignes.
     pdf = creer_pdf([[f"ligne {i}" for i in range(90)], [], [f"ligne {i}" for i in range(10)]])
     nom, chapitres = importer_cours("Statistiques.pdf", pdf)
@@ -53,7 +54,29 @@ def test_import_pdf_chapitres_et_charge() -> None:
     #    titres # et ## ; le titre et les lignes vides ne comptent pas.
     _, chapitres_md = importer_cours("SQL.md", "Intro\n# A\nun\n\ndeux\n## B\ntrois\n".encode("utf-8"))
     assert [(c.titre, c.nombre_lignes) for c in chapitres_md] == [("A", 2), ("B", 1)]
-    # 4. Un format non supporté est refusé (l'API renverra 415).
+    # 4. Titres de PDF par mot-clé (C-03), même à cheval sur deux pages. La couverture
+    #    (avant le 1er titre) est ignorée ; le titre ne compte pas comme ligne ; la liste
+    #    « 1. … 2. … » et la « Sous-partie » restent du contenu, car un mot-clé a été trouvé.
+    pdf_mots_cles = creer_pdf([
+        ["Couverture du cours", "Chapitre 1 Les bases", "Pour commencer :",
+         "1. Ouvrir le terminal", "2. Taper SELECT"],
+        ["suite du chapitre 1", "Partie II Les jointures", "Sous-partie 1 Jointure interne", "texte"],
+    ])
+    _, chapitres_pdf = importer_cours("SQL.pdf", pdf_mots_cles)
+    assert [(c.titre, c.nombre_lignes) for c in chapitres_pdf] == [
+        ("Chapitre 1 Les bases", 4), ("Partie II Les jointures", 2)]
+    # 5. Sans aucun mot-clé, la numérotation « 1. Titre » sert de titres ; « 1.5 » n'en est pas un.
+    pdf_numerote = creer_pdf([["1. Introduction", "a b c", "2. Methodes", "d", "1.5 pas un titre"]])
+    _, chapitres_pdf = importer_cours("SQL.pdf", pdf_numerote)
+    assert [(c.titre, c.nombre_lignes) for c in chapitres_pdf] == [
+        ("1. Introduction", 1), ("2. Methodes", 2)]
+    # 6. Garde-fous : mot-clé sans numéro, ligne de plus de 80 caractères, « 1.5 » → aucun
+    #    titre, donc repli « une page = un chapitre » (plan B de SPEC §10).
+    pdf_sans_titre = creer_pdf([["1.5 pas un titre", "Partie de ce code sans numero",
+                                 "Chapitre 3 " + "x" * 80]])
+    _, chapitres_pdf = importer_cours("SQL.pdf", pdf_sans_titre)
+    assert [(c.titre, c.nombre_lignes) for c in chapitres_pdf] == [("Page 1", 3)]
+    # 7. Un format non supporté est refusé (l'API renverra 415).
     with pytest.raises(FormatNonSupporte):
         importer_cours("notes.docx", b"x")
     # Pourquoi un test centré sur le PDF : c'est le seul format proposé à l'écran (décision
