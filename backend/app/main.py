@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.db import chemin_base, initialiser_base
-from app.routers import availability, courses, deadlines
+from app.routers import availability, courses, deadlines, plan
 
 
 @asynccontextmanager
@@ -25,6 +25,7 @@ app = FastAPI(title="HelpStud API", version="0.1.0", lifespan=cycle_de_vie)
 app.include_router(courses.router)
 app.include_router(deadlines.router)
 app.include_router(availability.router)
+app.include_router(plan.router)
 # Pourquoi un router par fichier : chaque ressource du contrat a son fichier, plus facile
 # à lire et à relire en PR qu'un seul gros main.py.
 

@@ -1,7 +1,8 @@
 """Tests de l'API (tests 5 à 7 de SPEC.md §8)."""
 
+import json
 from contextlib import closing
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -94,3 +95,45 @@ def test_api_import_cours(client: TestClient) -> None:
     assert client.patch("/courses/999", json={"priority": "low"}).status_code == 404
     # Pourquoi les vrais fichiers de sample_data : on teste avec les données de la démo,
     # donc la démo est garantie de fonctionner (SQL.md = 5 chapitres, 6 h).
+
+
+def semaine_iso(jour: date) -> str:
+    """La semaine ISO d'une date, au format « AAAA-Wnn »."""
+    annee, numero, _ = jour.isocalendar()
+    return f"{annee}-W{numero:02d}"
+
+
+def test_api_regeneration_garde_les_sessions_faites(client: TestClient) -> None:
+    """Test 7 : relancer generate remplace les sessions non faites (sans doublon) et ne
+    déplace pas une session faite (CA3.7, CA5.3)."""
+    aujourdhui = datetime.now(FUSEAU).date()
+    cours = envoyer_cours(client, "SQL.md", (DONNEES_DEMO / "SQL.md").read_bytes()).json()
+    client.post("/deadlines", json={"course_id": cours["id"], "title": "Examen", "type": "exam",
+                                    "date": str(aujourdhui + timedelta(days=30)), "weight": 60})
+    client.put("/availability", json=json.loads((DONNEES_DEMO / "availability.json").read_text()))
+    semaine = semaine_iso(aujourdhui + timedelta(days=7))  # toujours entièrement dans le futur
+
+    # 1. Première génération, puis on marque la 1re session comme faite.
+    premiere = client.post("/plan/generate", json={"week": semaine}).json()
+    assert len(premiere) > 0
+    faite = client.patch(f"/sessions/{premiere[0]['id']}", json={"done": True}).json()
+    assert faite["done"] is True
+
+    # 2. L'étudiant n'est plus libre que le jeudi, puis relance « Générer ».
+    client.put("/availability", json={"session_minutes": 60, "slots": {"thursday": ["14:00-20:00"]}})
+    seconde = client.post("/plan/generate", json={"week": semaine}).json()
+
+    # 3. La session faite n'a pas bougé ; toutes les autres sont replacées le jeudi ;
+    #    et il n'y a pas de doublon (même nombre de sessions qu'avant).
+    assert [s for s in seconde if s["done"]] == [faite]
+    non_faites = [s for s in seconde if not s["done"]]
+    assert all(datetime.fromisoformat(s["start"]).weekday() == 3 for s in non_faites)
+    assert len(seconde) == len(premiere)
+
+    # 4. GET /plan renvoie exactement les sessions de la semaine ; erreurs 422 et 404.
+    assert client.get("/plan", params={"week": semaine}).json() == seconde
+    assert client.post("/plan/generate", json={"week": "2026-47"}).status_code == 422
+    assert client.patch("/sessions/999", json={"done": True}).status_code == 404
+    # Pourquoi changer les disponibilités entre les deux générations : sans ça, le test
+    # passait même si les anciennes sessions n'étaient pas supprimées (vérifié en cassant
+    # le code). Il faut que l'ancien planning devienne faux pour prouver qu'il est remplacé.
