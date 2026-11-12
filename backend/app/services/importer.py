@@ -2,6 +2,8 @@
 
 import io
 import math
+import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,6 +21,21 @@ CHARGE_MINIMALE_HEURES = 1.0
 PREFIXES_TITRE_MARKDOWN = ("# ", "## ")
 # Pourquoi seulement # et ## : ce sont les niveaux de chapitre décidés (Q3 de SPEC.md) ;
 # un ### est une sous-partie, donc du contenu du chapitre en cours.
+
+MOTS_CLES_CHAPITRE_PDF = (
+    "chapitre", "partie", "module", "leçon", "lecon", "séance", "seance",
+    "thème", "theme", "unité", "unite",
+)
+LONGUEUR_MAX_TITRE_PDF = 80
+MOTIF_TITRE_MOT_CLE = re.compile(
+    r"^\s*(?i:" + "|".join(MOTS_CLES_CHAPITRE_PDF) + r")\s+(\d+|[IVXLC]+)\b"
+)
+MOTIF_TITRE_NUMEROTE = re.compile(r"^\s*(\d{1,2}|[IVXLC]+)\.\s+\S")
+# Pourquoi une liste de mots-clés : on ne sait pas comment les profs écrivent leurs PDF ;
+# on ajoute un mot ici sans toucher au reste du code (décision équipe, C-03).
+# Pourquoi exiger un numéro après le mot-clé : « Partie de ce code… » est une phrase, pas un titre.
+# Pourquoi « \.\s » dans le motif numéroté : « 1.5 Intro » est une sous-partie, pas un chapitre.
+# Pourquoi 80 caractères au plus : au-delà, c'est une phrase qui commence par un numéro.
 
 EXTENSIONS_ACCEPTEES = (".md", ".pdf")
 
@@ -80,13 +97,32 @@ def creer_chapitre(titre: str, lignes: list[str]) -> ChapitreImporte:
     # dernier chapitre et pour un fichier sans titre ; on l'écrit une seule fois.
 
 
-def extraire_chapitres_markdown(texte: str, titre_par_defaut: str) -> list[ChapitreImporte]:
-    """Découpe un texte Markdown en chapitres : un chapitre par titre # ou ##."""
+def lire_titre_pdf_mot_cle(ligne: str) -> str | None:
+    """Renvoie la ligne si c'est un titre « Chapitre 2 … », « Partie II … », sinon None."""
+    if len(ligne.strip()) <= LONGUEUR_MAX_TITRE_PDF and MOTIF_TITRE_MOT_CLE.match(ligne):
+        return ligne.strip()
+    return None
+    # Pourquoi garder toute la ligne comme titre : « Chapitre 1 Les bases » est plus parlant
+    # dans le planning que « Les bases » seul, et on ne risque pas de couper un titre mal formé.
+
+
+def lire_titre_pdf_numerote(ligne: str) -> str | None:
+    """Renvoie la ligne si c'est un titre « 1. Titre » ou « II. Titre », sinon None."""
+    if len(ligne.strip()) <= LONGUEUR_MAX_TITRE_PDF and MOTIF_TITRE_NUMEROTE.match(ligne):
+        return ligne.strip()
+    return None
+    # Pourquoi une fonction séparée du mot-clé : elle ne sert que si le PDF n'a aucun
+    # mot-clé, sinon les listes numérotées du cours deviendraient de faux chapitres.
+
+
+def decouper_par_titres(lignes: list[str], lire_titre: Callable[[str], str | None],
+                        titre_par_defaut: str) -> list[ChapitreImporte]:
+    """Découpe des lignes en chapitres : chaque ligne reconnue par `lire_titre` en ouvre un."""
     chapitres: list[ChapitreImporte] = []
     titre_courant: str | None = None
     lignes_courantes: list[str] = []
-    for ligne in texte.splitlines():
-        titre = lire_titre_markdown(ligne)
+    for ligne in lignes:
+        titre = lire_titre(ligne)
         if titre is None:
             lignes_courantes.append(ligne)
             continue
@@ -100,26 +136,44 @@ def extraire_chapitres_markdown(texte: str, titre_par_defaut: str) -> list[Chapi
     # Pourquoi ce parcours ligne par ligne : on accumule le contenu jusqu'au titre suivant,
     # puis on « ferme » le chapitre. Le texte avant le 1er titre est accumulé puis jeté
     # au 1er titre (lignes_courantes = []) ; sans aucun titre, il devient le chapitre unique.
+    # Pourquoi `lire_titre` en paramètre : la même boucle sert au Markdown (# / ##) et au
+    # PDF (mots-clés ou numéros) ; seule la façon de reconnaître un titre change.
+
+
+def extraire_chapitres_markdown(texte: str, titre_par_defaut: str) -> list[ChapitreImporte]:
+    """Découpe un texte Markdown en chapitres : un chapitre par titre # ou ##."""
+    return decouper_par_titres(texte.splitlines(), lire_titre_markdown, titre_par_defaut)
+
+
+def lire_pages_pdf(contenu: bytes) -> list[str]:
+    """Texte de chaque page du PDF (chaîne vide pour une page sans texte)."""
+    try:
+        pages = PdfReader(io.BytesIO(contenu)).pages
+        return [page.extract_text() or "" for page in pages]
+    except PyPdfError as erreur:
+        raise FichierVide(f"PDF illisible : {erreur}") from erreur
+    # Pourquoi attraper PyPdfError : un faux PDF ne doit pas faire planter l'API (erreur 500).
 
 
 def extraire_chapitres_pdf(contenu: bytes, titre_par_defaut: str) -> list[ChapitreImporte]:
-    """Un chapitre par page non vide du PDF, nommé « Page N »."""
-    try:
-        pages = PdfReader(io.BytesIO(contenu)).pages
-        textes = [page.extract_text() or "" for page in pages]
-    except PyPdfError as erreur:
-        raise FichierVide(f"PDF illisible : {erreur}") from erreur
-    chapitres = [
+    """Chapitres d'un PDF : par mots-clés, sinon par numéros « 1. », sinon une page = un chapitre."""
+    textes = lire_pages_pdf(contenu)
+    if compter_lignes("\n".join(textes)) == 0:
+        raise FichierVide("Le PDF ne contient aucun texte (scan ou pages blanches ?)")
+    toutes_les_lignes = [ligne for texte in textes for ligne in texte.splitlines()]
+    for lire_titre in (lire_titre_pdf_mot_cle, lire_titre_pdf_numerote):
+        if any(lire_titre(ligne) for ligne in toutes_les_lignes):
+            return decouper_par_titres(toutes_les_lignes, lire_titre, titre_par_defaut)
+    return [
         creer_chapitre(f"Page {numero}", texte.splitlines())
         for numero, texte in enumerate(textes, start=1)
         if compter_lignes(texte) > 0
     ]
-    if not chapitres:
-        raise FichierVide("Le PDF ne contient aucun texte (scan ou pages blanches ?)")
-    return chapitres
-    # Pourquoi une page = un chapitre : un PDF n'a pas de « # » ; c'est la version simple
-    # du P0, la détection des titres « Chapitre N » vient en P1-01 (titre_par_defaut y servira).
-    # Pourquoi attraper PyPdfError : un faux PDF ne doit pas faire planter l'API (erreur 500).
+    # Pourquoi toutes les pages bout à bout : un chapitre peut commencer au milieu d'une
+    # page et continuer sur la suivante. Pourquoi cet ordre (mots-clés, puis numéros) :
+    # « Chapitre 2 » est un titre sûr ; « 1. » peut être une simple liste du cours.
+    # Pourquoi le repli par page : un PDF sans titre reconnu doit quand même s'importer
+    # (plan B de SPEC §10).
 
 
 def importer_cours(nom_fichier: str, contenu: bytes) -> tuple[str, list[ChapitreImporte]]:
