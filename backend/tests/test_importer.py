@@ -2,7 +2,12 @@
 
 import pytest
 
-from app.services.importer import calculer_charge, compter_mots
+from app.services.importer import (
+    ChapitreImporte,
+    calculer_charge,
+    compter_mots,
+    extraire_chapitres_markdown,
+)
 
 
 @pytest.mark.parametrize(
@@ -28,3 +33,30 @@ def test_compter_mots() -> None:
     assert compter_mots("un deux\ttrois\nquatre  cinq") == 5
     assert compter_mots("") == 0
     # Pourquoi : calculer_charge dépend de ce compte ; s'il est faux, toute la charge l'est.
+
+
+TEXTE_MARKDOWN = """Intro ignorée
+# Chapitre A
+un deux trois
+## Chapitre B
+### Sous-partie
+quatre cinq
+"""
+
+
+def test_titres_markdown_deviennent_chapitres() -> None:
+    """Test 7 : chaque titre # ou ## devient un chapitre, dans l'ordre (CA1.2)."""
+    chapitres = extraire_chapitres_markdown(TEXTE_MARKDOWN, "Cours")
+    assert chapitres == [
+        ChapitreImporte(titre="Chapitre A", nombre_mots=3, heures=1.0),
+        ChapitreImporte(titre="Chapitre B", nombre_mots=4, heures=1.0),
+    ]
+    # Pourquoi ce texte : il contient les 4 pièges de la règle — du texte avant le
+    # 1er titre (ignoré), un # et un ## (chapitres), un ### (simple contenu).
+
+
+def test_markdown_sans_titre_un_seul_chapitre() -> None:
+    """Sans aucun titre, tout le texte forme un seul chapitre nommé comme le cours."""
+    chapitres = extraire_chapitres_markdown("un deux trois", "Cours")
+    assert chapitres == [ChapitreImporte(titre="Cours", nombre_mots=3, heures=1.0)]
+    # Pourquoi : un fichier de notes sans titre doit quand même devenir un cours utilisable.
