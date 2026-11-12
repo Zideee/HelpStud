@@ -13,17 +13,21 @@ from calculs import (
     creneaux_vers_lignes,
     libelle,
     lignes_vers_creneaux,
+    lire_heure,
 )
 from ui import badge_jours_restants, badge_type, entete
 
 DUREES_SESSION = [30, 45, 60, 90, 120]
 COLONNES_TABLEAU = {
     "Jour": st.column_config.SelectboxColumn("Jour", options=list(JOURS.values()), required=True),
-    "Début": st.column_config.TimeColumn("Début", format="HH:mm", step=900, required=True),
-    "Fin": st.column_config.TimeColumn("Fin", format="HH:mm", step=900, required=True),
+    "Début": st.column_config.TextColumn("Début", help="Tapez l'heure : 18h, 18:30, 9h15…",
+                                         validate=r"^\s*\d{1,2}\s*([hH:]\s*(\d{2})?)?\s*$"),
+    "Fin": st.column_config.TextColumn("Fin", help="Tapez l'heure : 20h, 20:00…",
+                                       validate=r"^\s*\d{1,2}\s*([hH:]\s*(\d{2})?)?\s*$"),
 }
-# Pourquoi des colonnes typées : le jour se choisit dans une liste, l'heure dans un sélecteur
-# (pas de 15 min) ; l'étudiant ne tape plus « 18:00-20:00, … » à la main.
+# Pourquoi le jour dans une liste : 7 choix fixes, pas de faute de frappe possible.
+# Pourquoi les heures en texte libre : on tape « 18h » directement dans la case, même après
+# une suggestion ; une heure mal écrite s'affiche en rouge (validate) et n'est pas envoyée.
 
 entete("📅", "Échéances et disponibilités",
        "Ajoutez vos examens et contrôles continus, puis vos créneaux libres de la semaine.")
@@ -110,8 +114,8 @@ with onglet_dispos:
 
     # 2. Suggestions : un clic ajoute des lignes au tableau, modifiables ensuite.
     st.markdown("**Mes créneaux libres, chaque semaine**")
-    st.caption("Cliquez sur une suggestion pour remplir le tableau, puis ajustez les heures si besoin. "
-               "Le « + » en bas du tableau ajoute une ligne ; cochez une ligne pour la supprimer.")
+    st.caption("Cliquez sur une suggestion, ou tapez directement dans le tableau (ex. 18h, 20h30). "
+               "Le « + » en bas ajoute une ligne ; cochez une ligne pour la supprimer.")
     zone_suggestions = st.container(horizontal=True)
 
     # 3. Le tableau des créneaux : une ligne = un jour, une heure de début, une heure de fin.
@@ -136,12 +140,20 @@ with onglet_dispos:
     # Pourquoi `lignes + lignes_suggerees` : on garde ce que l'étudiant a déjà modifié à la main.
 
     # 4. Résumé et enregistrement.
-    heures_libres = sum((datetime.combine(date.today(), ligne["Fin"]) -
-                         datetime.combine(date.today(), ligne["Début"])).total_seconds() / 3600
+    heures_libres = sum((datetime.combine(date.today(), lire_heure(ligne["Fin"])) -
+                         datetime.combine(date.today(), lire_heure(ligne["Début"]))).total_seconds() / 3600
                         for ligne in creneaux_vers_lignes(creneaux))
     nombre_creneaux = sum(len(liste) for liste in creneaux.values())
+    remplies = sum(1 for ligne in lignes
+                   if any(isinstance(ligne.get(c), str) and ligne[c].strip() for c in ("Début", "Fin")))
+    ignorees = remplies - nombre_creneaux
     col_resume, col_bouton = st.columns([3, 1], vertical_alignment="center")
     col_resume.markdown(f"**{nombre_creneaux} créneau(x)** · {heures_libres:g} h libres par semaine")
+    if ignorees > 0:
+        col_resume.caption(f":red[{ignorees} ligne(s) incomplète(s), en double ou avec une heure illisible : "
+                           "elles ne seront pas enregistrées.]")
+    # Pourquoi prévenir : une ligne ignorée en silence ferait croire à l'étudiant que son
+    # créneau est enregistré alors qu'il ne l'est pas.
     modifie = creneaux != st.session_state.creneaux_enregistres or minutes != st.session_state.minutes_session
     if modifie:
         col_resume.caption(":orange[Modifications non enregistrées]")

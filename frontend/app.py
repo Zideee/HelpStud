@@ -28,11 +28,14 @@ def accueil() -> None:
     # d'œil, et chaque carte mène directement à son écran.
 
 
-PAGE_IMPORT = st.Page("pages/1_Import.py", title="Importer un cours", icon=":material/upload_file:")
-PAGE_ECHEANCES = st.Page("pages/2_Echeances.py", title="Échéances", icon=":material/event:")
-PAGE_PLANNING = st.Page("pages/3_Planning.py", title="Planning", icon=":material/calendar_month:")
-PAGE_DASHBOARD = st.Page("pages/4_Dashboard.py", title="Tableau de bord", icon=":material/insights:")
+PAGE_IMPORT = st.Page("ecrans/1_Import.py", title="Importer un cours", icon=":material/upload_file:")
+PAGE_ECHEANCES = st.Page("ecrans/2_Echeances.py", title="Échéances", icon=":material/event:")
+PAGE_PLANNING = st.Page("ecrans/3_Planning.py", title="Planning", icon=":material/calendar_month:")
+PAGE_DASHBOARD = st.Page("ecrans/4_Dashboard.py", title="Tableau de bord", icon=":material/insights:")
 PAGE_ACCUEIL = st.Page(accueil, title="Accueil", icon=":material/home:", default=True)
+# Pourquoi le dossier s'appelle « ecrans » et pas « pages » : Streamlit lit automatiquement
+# un dossier « pages/ » avec son ancien menu (noms de fichiers) ; après un F5, ce menu
+# remplaçait le nôtre. Avec un autre nom, seul st.navigation décide du menu.
 
 navigation = st.navigation({
     "": [PAGE_ACCUEIL],

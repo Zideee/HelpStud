@@ -31,7 +31,7 @@ except api_client.ErreurApi as erreur:
     st.stop()
 if not cours:
     st.info("Aucun cours : commencez par importer un PDF.", icon=":material/info:")
-    st.page_link("pages/1_Import.py", label="Importer un cours", icon=":material/upload_file:")
+    st.page_link("ecrans/1_Import.py", label="Importer un cours", icon=":material/upload_file:")
     st.stop()
 noms_des_cours = {c["id"]: c["name"] for c in cours}
 titres_des_chapitres = {ch["id"]: ch["title"] for c in cours for ch in c.get("chapters", [])}
@@ -61,7 +61,7 @@ with st.container(border=True):
                            f"{titres_des_chapitres.get(suivante['chapter_id'], '?')}")
     else:
         col_texte.markdown("**Aucune session prévue.** Générez votre planning pour commencer.")
-    col_lien.page_link("pages/3_Planning.py", label="Ouvrir le planning", icon=":material/calendar_month:")
+    col_lien.page_link("ecrans/3_Planning.py", label="Ouvrir le planning", icon=":material/calendar_month:")
 if en_retard:
     st.warning(f"{en_retard} session(s) en retard : cochez-les dans le Planning si vous les avez faites.",
                icon=":material/warning:")
@@ -91,7 +91,7 @@ with a_venir:
     prochaines = prochaines_echeances(echeances, date.today())
     if not prochaines:
         st.info("Aucune échéance à venir.", icon=":material/info:")
-        st.page_link("pages/2_Echeances.py", label="Ajouter une échéance", icon=":material/add:")
+        st.page_link("ecrans/2_Echeances.py", label="Ajouter une échéance", icon=":material/add:")
     for echeance in prochaines:
         jour = date.fromisoformat(echeance["date"])
         with st.container(border=True):

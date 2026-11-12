@@ -102,7 +102,7 @@ backend/tests/                   conftest.py + test_*.py
 frontend/app.py                  Streamlit, navigation
 frontend/api_client.py           SEUL module qui fait des requêtes HTTP
 frontend/fake_data.py            données factices au format exact de l'API
-frontend/pages/                  1_Import.py, 2_Echeances.py, 3_Planning.py, 4_Dashboard.py
+frontend/ecrans/                  1_Import.py, 2_Echeances.py, 3_Planning.py, 4_Dashboard.py
 sample_data/                     3 cours .md, deadlines.csv, availability.json
 docs/                            spec officielle
 docs/sprint1/                    P0.md (tâches obligatoires), P1.md (compléments)
