@@ -1,0 +1,26 @@
+# Environnement virtuel Python
+venv/
+.venv/
+
+# Fichiers compilés Python
+__pycache__/
+*.py[cod]
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Base SQLite locale (chaque poste a la sienne)
+*.db
+*.sqlite3
+
+# Secrets et réglages locaux
+.env
+CLAUDE.local.md
+
+# Éditeurs et OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
