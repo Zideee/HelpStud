@@ -1,0 +1,20 @@
+# Thème de l'interface HelpStud (lu par Streamlit au lancement, depuis la racine du dépôt).
+# Pourquoi un fichier de config plutôt que du CSS : c'est la façon officielle de Streamlit ;
+# toutes les pages et tous les composants prennent les couleurs, sans code à maintenir.
+
+[theme]
+base = "light"
+primaryColor = "#4F46E5"              # indigo : boutons, cases cochées, barres de progression
+backgroundColor = "#F7F8FC"           # fond de page : blanc cassé, moins fatigant que le blanc pur
+secondaryBackgroundColor = "#EEF0FB"  # fond des champs et des blocs : indigo très clair
+textColor = "#1F2937"                 # texte : gris anthracite, plus doux que le noir
+font = "sans serif"
+baseRadius = "0.75rem"                # coins arrondis : look moderne et « carte »
+
+[theme.sidebar]
+backgroundColor = "#1E1B4B"           # barre latérale indigo foncé : la navigation ressort
+secondaryBackgroundColor = "#312E81"
+textColor = "#E0E7FF"
+
+[client]
+toolbarMode = "minimal"               # cache le bouton « Deploy », inutile pour l'étudiant
