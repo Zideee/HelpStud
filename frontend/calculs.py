@@ -5,7 +5,9 @@ ce qui permet de les tester sans navigateur ni serveur (tests 11 et 12).
 """
 
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
+FUSEAU = ZoneInfo("Europe/Paris")
 PRIORITES = {"Haute": "high", "Moyenne": "medium", "Basse": "low"}
 CATEGORIES = {"Examen": "exam", "Contrôle continu": "continuous", "Mixte": "mixed", "Non précisée": None}
 TYPES_ECHEANCE = {"Examen": "exam", "Contrôle continu": "assignment"}
@@ -55,3 +57,21 @@ def jour_et_horaire(debut_iso: str, fin_iso: str) -> tuple[str, str]:
     return jour, f"{debut:%H:%M}–{fin:%H:%M}"
     # Pourquoi nos propres noms de jours : strftime(« %a ») dépend de la langue de
     # l'ordinateur (« Mon » sur un poste en anglais) ; ici, c'est toujours en français.
+
+
+def compter_sessions(sessions: list[dict], maintenant: datetime) -> tuple[int, int]:
+    """(sessions faites, sessions en retard) : en retard = finie avant maintenant et pas faite."""
+    faites = sum(1 for session in sessions if session["done"])
+    en_retard = sum(1 for session in sessions
+                    if not session["done"] and datetime.fromisoformat(session["end"]) < maintenant)
+    return faites, en_retard
+    # Pourquoi comparer la FIN de la session : une session commencée mais pas terminée
+    # n'est pas encore « en retard » (CA5.2, décision Q11 de SPEC.md).
+
+
+def prochaines_echeances(echeances: list[dict], aujourdhui: date, nombre: int = 3) -> list[dict]:
+    """Les `nombre` prochaines échéances (aujourd'hui inclus), de la plus proche à la plus lointaine."""
+    a_venir = [echeance for echeance in echeances if date.fromisoformat(echeance["date"]) >= aujourdhui]
+    return sorted(a_venir, key=lambda echeance: echeance["date"])[:nombre]
+    # Pourquoi trier ici alors que l'API trie déjà : la fonction ne dépend pas d'un détail
+    # de l'API ; elle reste juste même si on lui donne une liste dans le désordre.
