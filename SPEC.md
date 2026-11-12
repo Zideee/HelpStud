@@ -187,42 +187,56 @@ contrat ; c'est le front qui les affiche en français (« haute », « examen »
 4. Profil de l'étudiant (préférences, durée de session par défaut).
 5. Mode sombre.
 
-## 8. Les tests
+## 8. Les tests (12 au total)
+
+> Décision de l'équipe (Sprint 1) : **12 tests au total, 4 par partie** (métier, API,
+> front). C'est un MVP : chaque test est une **synthèse** qui couvre plusieurs règles,
+> avec un `assert` par règle (le message d'échec de pytest dit laquelle est cassée).
+> Les sprints suivants pourront en ajouter, avec l'accord du PO.
 
 « Technique » = teste un module isolé (fonction Python pure).
-« Fonctionnel » = teste un comportement visible par l'utilisateur, à travers l'API.
+« Fonctionnel » = teste un comportement visible par l'utilisateur, à travers l'API ou le front.
+
+### Métier (fait, P0-01 à P0-06)
 
 | # | Fichier | Nom du test | Type | Ce qu'il prouve |
 |---|---|---|---|---|
-| 1 | `test_planner.py` | `test_sessions_uniquement_dans_creneaux_libres` | Technique | Chaque session est entièrement contenue dans un créneau de disponibilité (CA3.1). |
-| 2 | `test_planner.py` | `test_aucune_session_ne_se_chevauche` | Technique | Deux sessions n'ont jamais d'intervalle commun (CA3.2). |
-| 3 | `test_planner.py` | `test_aucune_session_apres_echeance` | Technique | Chaque session finit avant le jour de l'échéance de son cours (CA3.3). |
-| 4 | `test_planner.py` | `test_cours_prioritaire_place_en_premier` | Technique | À priorité égale, le cours au meilleur score `weight / jours_restants` reçoit la première session (CA3.4). |
-| 5 | `test_planner.py` | `test_sans_disponibilite_liste_vide` | Technique | Sans créneau, le planificateur renvoie `[]` sans lever d'exception. |
-| 6 | `test_planner.py` | `test_creneau_trop_court_ignore` | Technique | Un créneau plus court que `session_minutes` ne reçoit aucune session. |
-| 7 | `test_importer.py` | `test_titres_markdown_deviennent_chapitres` | Technique | Les titres `#` et `##` donnent les bons chapitres, dans l'ordre (CA1.2). |
-| 8 | `test_importer.py` | `test_regle_de_charge` | Technique | 200 mots/h, arrondi au 0,5 h supérieur et minimum 1 h sont respectés (CA1.4, §5.1). |
-| 9 | `test_ics_export.py` | `test_ics_valide_un_vevent_par_session` | Technique | Le calendrier se relit, contient 1 `VEVENT` par session, et le résumé contient cours + chapitre (CA4.2). |
-| 10 | `test_ics_export.py` | `test_ics_heures_europe_paris_hiver` | Technique | Une session à 18:00 en novembre (UTC+1) est exportée à 17:00 UTC (CA4.3). |
-| 11 | `test_api.py` | `test_post_echeance_date_passee_renvoie_422` | Fonctionnel | L'API refuse une échéance dans le passé (CA2.3). |
-| 12 | `test_parcours.py` | `test_parcours_complet_progression` | Fonctionnel | De bout en bout : upload → échéance → disponibilités → generate → `PATCH done` → `GET /courses` montre une progression > 0 (blocs 1 à 5). |
+| 1 | `test_importer.py` | `test_import_markdown_chapitres_et_charge` | Technique | `#` et `##` → chapitres dans l'ordre ; nom = nom du fichier ; 200 mots/h, arrondi au 0,5 h supérieur, min 1 h ; `.docx` refusé (CA1.1, CA1.2, CA1.4, CA1.6). |
+| 2 | `test_planner.py` | `test_planning_respecte_les_creneaux` | Technique | Sessions dans les créneaux libres, hors créneaux occupés, sans chevauchement, finies avant le jour de l'échéance ; créneau trop court ou aucune dispo → `[]` (CA3.1 à CA3.3). |
+| 3 | `test_planner.py` | `test_planning_respecte_la_priorite` | Technique | Exemple 1 du §5.2 (priorité haute avant échéance plus proche) ; cours sans échéance en dernier ; cours à l'examen passé non planifié (CA3.4, CA3.6). |
+| 4 | `test_ics_export.py` | `test_ics_valide_et_heures_paris` | Technique | Le `.ics` se relit, 1 `VEVENT` par session, résumé = cours + chapitre, 18:00 Paris en hiver = 17:00 UTC (CA4.2, CA4.3). |
 
-Tests ajoutés pour les demandes de l'équipe :
+### API (P0-07 à P0-11)
 
 | # | Fichier | Nom du test | Type | Ce qu'il prouve |
 |---|---|---|---|---|
-| 13 | `test_planner.py` | `test_priorite_haute_multiplie_le_score` | Technique | Avec l'exemple 1 du §5.2, le cours A (priorité haute, plus loin) passe avant le cours B (CA1.7, CA3.4). |
-| 14 | `test_planner.py` | `test_cours_sans_echeance_planifie_en_dernier` | Technique | Un cours sans échéance est planifié, mais seulement après les cours qui en ont une (CA2.6, CA3.6). |
-| 15 | `test_api.py` | `test_post_cours_avec_priorite_et_categorie` | Fonctionnel | La priorité et la catégorie envoyées à l'import sont renvoyées par `GET /courses` ; sans elles, les valeurs par défaut s'appliquent (CA1.7). |
-| 16 | `test_api.py` | `test_indisponibilite_deplace_les_sessions` | Fonctionnel | *(bonus 1)* Après `POST /unavailability`, aucune session non faite ne touche le créneau occupé, et les sessions faites n'ont pas bougé. |
+| 5 | `test_api.py` | `test_api_echeances` | Fonctionnel | Création `201`, liste triée par date, suppression `204` ; date passée → `422` ; cours inconnu → `404` (CA2.1 à CA2.3). |
+| 6 | `test_api.py` | `test_api_import_cours` | Fonctionnel | Upload `.md` → `201` avec chapitres et `hours_total` ; priorité et catégorie enregistrées, valeurs par défaut sinon ; `.docx` → `415` (CA1.1, CA1.6, CA1.7). |
+| 7 | `test_api.py` | `test_api_regeneration_garde_les_sessions_faites` | Fonctionnel | Relancer `generate` ne duplique pas les sessions non faites et ne déplace pas une session faite (CA3.7, CA5.3). |
+| 8 | `test_parcours.py` | `test_parcours_complet_progression` | Fonctionnel | De bout en bout : upload → échéance → disponibilités → generate → `PATCH done` → `GET /courses` montre une progression > 0 → `GET /plan.ics` en `text/calendar` (blocs 1 à 4). |
+
+### Front (P0-12 à P0-16)
+
+Le front ne se teste pas en cliquant : on teste `api_client.py` (avec un faux serveur
+`httpx.MockTransport`, sans lancer le back) et les calculs du dashboard, placés dans un
+petit module pur `frontend/calculs.py`.
+
+| # | Fichier | Nom du test | Type | Ce qu'il prouve |
+|---|---|---|---|---|
+| 9 | `frontend/tests/test_api_client.py` | `test_client_appelle_les_routes_du_contrat` | Technique | Chaque fonction appelle la bonne méthode et la bonne route, avec le bon corps JSON (CA5.4). |
+| 10 | `frontend/tests/test_api_client.py` | `test_client_erreurs_lisibles` | Fonctionnel | Une réponse `422` / `404` ou un back éteint lèvent `ErreurApi` avec un message lisible, jamais une trace Python. |
+| 11 | `frontend/tests/test_calculs.py` | `test_semaine_iso_et_libelles` | Technique | Une date → `"AAAA-Wnn"` ; libellés français ↔ valeurs API (Haute ↔ `high`, Contrôle continu ↔ `assignment`…) (CA1.7, CA2.5). |
+| 12 | `frontend/tests/test_calculs.py` | `test_indicateurs_dashboard` | Fonctionnel | Sessions faites / en retard (finie, passée, non faite) et 3 prochaines échéances à partir de données de l'API (CA5.2). |
+
+Hors des 12 : le test du bonus 1 (indisponibilités) sera ajouté au Sprint 3 si le PO le valide.
 
 ## 9. Jalons
 
 | Jalon | Contenu | Tests visés |
 |---|---|---|
-| Sprint 1 | **MVP complet** : métier, API et front (blocs 1 à 5), tâches P0 de [`docs/sprint1/P0.md`](docs/sprint1/P0.md) | 1 à 15 |
-| Sprint 2 | Compléments P1 de [`docs/sprint1/P1.md`](docs/sprint1/P1.md) (PDF, erreurs, dashboard, vérification .ics) | 1 à 15 + tests P1 |
-| Sprint 3 | Bonus 1 (indisponibilités), README, démo, AI_LOG relu | 16 + tous |
+| Sprint 1 | **MVP complet** : métier, API et front (blocs 1 à 5), tâches P0 de [`docs/sprint1/P0.md`](docs/sprint1/P0.md) | 1 à 12 |
+| Sprint 2 | Compléments P1 de [`docs/sprint1/P1.md`](docs/sprint1/P1.md) (PDF, erreurs, dashboard, vérification .ics) | 1 à 12 (+ tests P1 validés par le PO) |
+| Sprint 3 | Bonus 1 (indisponibilités), README, démo, AI_LOG relu | 1 à 12 (+ test du bonus si validé) |
 | Gel | Plus aucune fonctionnalité : corrections seulement | tous verts |
 
 Rôles tournants à chaque sprint : **Product Owner**, **Driver**, **Navigator+Tester**.
@@ -242,8 +256,8 @@ Dates des sprints et du gel : **à fixer** (seule question encore ouverte).
 | Un membre absent | Personne ne connaît sa partie | Rotation des rôles + règle « chacun explique chaque ligne ». |
 | Code généré par l'IA qu'on ne sait pas expliquer | Échec à l'oral | On ne le livre pas : on le réécrit plus simplement, et on le note dans `AI_LOG.md`. |
 | SQLite partagé entre tests | Tests qui s'influencent | Une base temporaire par test (fixture dans `conftest.py`). |
-| Le score avec priorité devient difficile à expliquer | Échec à l'oral, bugs | Formule unique sur une ligne + exemples chiffrés du §5.2 repris dans le test 13. |
-| Le bonus « indisponibilités » déborde sur les 5 blocs | Blocs obligatoires pas finis | Il n'est commencé qu'au Sprint 3, une fois les tests 1 à 15 verts. |
+| Le score avec priorité devient difficile à expliquer | Échec à l'oral, bugs | Formule unique sur une ligne + exemples chiffrés du §5.2 repris dans le test 3. |
+| Le bonus « indisponibilités » déborde sur les 5 blocs | Blocs obligatoires pas finis | Il n'est commencé qu'au Sprint 3, une fois les tests 1 à 12 verts. |
 
 ## 11. Journal des décisions
 

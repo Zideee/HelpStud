@@ -1,10 +1,33 @@
 """Point d'entrée de l'API HelpStud : crée l'application FastAPI."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-app = FastAPI(title="HelpStud API", version="0.1.0")
+from app.db import chemin_base, initialiser_base
+from app.routers import availability, courses, deadlines, plan
+
+
+@asynccontextmanager
+async def cycle_de_vie(application: FastAPI) -> AsyncIterator[None]:
+    """Au démarrage du serveur : crée les tables si besoin."""
+    initialiser_base(chemin_base())
+    yield
+    # Pourquoi au démarrage et pas à l'import du module : le chemin de la base est lu au
+    # moment où le serveur démarre, donc les tests peuvent le changer juste avant.
+
+
+app = FastAPI(title="HelpStud API", version="0.1.0", lifespan=cycle_de_vie)
 # Pourquoi une variable `app` au niveau du module : c'est ce que uvicorn cherche
 # quand on lance `uvicorn app.main:app` (module app.main, objet app).
+
+app.include_router(courses.router)
+app.include_router(deadlines.router)
+app.include_router(availability.router)
+app.include_router(plan.router)
+# Pourquoi un router par fichier : chaque ressource du contrat a son fichier, plus facile
+# à lire et à relire en PR qu'un seul gros main.py.
 
 
 @app.get("/health")
