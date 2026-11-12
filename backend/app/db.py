@@ -4,6 +4,9 @@ import os
 import sqlite3
 from collections.abc import Iterator
 from contextlib import closing
+from typing import Annotated
+
+from fastapi import Depends
 
 CHEMIN_PAR_DEFAUT = "helpstud.db"
 # Pourquoi un fichier à la racine : simple à trouver, et ignoré par Git (*.db dans .gitignore).
@@ -90,3 +93,8 @@ def obtenir_connexion() -> Iterator[sqlite3.Connection]:
         connexion.close()
     # Pourquoi commit à la fin seulement : si la route échoue au milieu (ex. 404 après une
     # insertion), rollback annule tout ; la base ne reste jamais à moitié modifiée.
+
+
+Connexion = Annotated[sqlite3.Connection, Depends(obtenir_connexion)]
+# Pourquoi cet alias : chaque route écrit simplement `connexion: Connexion` pour recevoir
+# sa connexion, au lieu de répéter `Depends(obtenir_connexion)` partout.
