@@ -1,12 +1,29 @@
 """Écran 2 — Échéances (examens, contrôle continu) et disponibilités de la semaine (bloc 2)."""
 
-from datetime import date
+from datetime import date, datetime
 
+import pandas as pd
 import streamlit as st
 
 import api_client
-from calculs import JOURS, TYPES_ECHEANCE, ecrire_creneaux, libelle, lire_creneaux_saisis
+from calculs import (
+    JOURS,
+    SUGGESTIONS_CRENEAUX,
+    TYPES_ECHEANCE,
+    creneaux_vers_lignes,
+    libelle,
+    lignes_vers_creneaux,
+)
 from ui import badge_jours_restants, badge_type, entete
+
+DUREES_SESSION = [30, 45, 60, 90, 120]
+COLONNES_TABLEAU = {
+    "Jour": st.column_config.SelectboxColumn("Jour", options=list(JOURS.values()), required=True),
+    "Début": st.column_config.TimeColumn("Début", format="HH:mm", step=900, required=True),
+    "Fin": st.column_config.TimeColumn("Fin", format="HH:mm", step=900, required=True),
+}
+# Pourquoi des colonnes typées : le jour se choisit dans une liste, l'heure dans un sélecteur
+# (pas de 15 min) ; l'étudiant ne tape plus « 18:00-20:00, … » à la main.
 
 entete("📅", "Échéances et disponibilités",
        "Ajoutez vos examens et contrôles continus, puis vos créneaux libres de la semaine.")
@@ -76,24 +93,68 @@ with onglet_echeances:
 
 # --- 3. Disponibilités ---------------------------------------------------------------------------
 with onglet_dispos:
-    actuelles = api_client.lire_disponibilites() or {"session_minutes": 60, "slots": {}}
-    with st.form("disponibilites"):
-        st.markdown("**Mes créneaux libres, chaque semaine**")
-        minutes = st.number_input("Durée d'une session (minutes)", min_value=15, step=15,
-                                  value=actuelles["session_minutes"])
-        colonnes = st.columns(2)
-        saisies = {}
-        for numero, (jour, nom) in enumerate(JOURS.items()):
-            saisies[jour] = colonnes[numero % 2].text_input(
-                nom, value=ecrire_creneaux(actuelles["slots"].get(jour, [])),
-                placeholder="18:00-20:00, 21:00-22:00")
-        if st.form_submit_button("Enregistrer", type="primary", icon=":material/save:"):
-            creneaux = {jour: lire_creneaux_saisis(texte) for jour, texte in saisies.items()
-                        if lire_creneaux_saisis(texte)}
-            try:
-                api_client.enregistrer_disponibilites(int(minutes), creneaux)
-                st.toast("Disponibilités enregistrées.", icon=":material/check_circle:")
-            except api_client.ErreurApi as erreur:
-                st.error(erreur.message, icon=":material/error:")
-    # Pourquoi pré-remplir avec lire_disponibilites : l'étudiant modifie ses créneaux au lieu
-    # de tout ressaisir. Pourquoi 2 colonnes : les 7 jours tiennent sur un écran sans défiler.
+    if "creneaux_enregistres" not in st.session_state:
+        actuelles = api_client.lire_disponibilites() or {"session_minutes": 60, "slots": {}}
+        st.session_state.creneaux_enregistres = actuelles["slots"]
+        st.session_state.lignes_dispos = creneaux_vers_lignes(actuelles["slots"])
+        st.session_state.minutes_session = actuelles["session_minutes"]
+        st.session_state.version_tableau = 0
+    # Pourquoi st.session_state : Streamlit relance la page à chaque clic ; le tableau en
+    # cours de modification doit survivre à ces relances. On ne lit l'API qu'une fois.
+
+    # 1. Durée d'une session : un clic, pas de saisie.
+    st.markdown("**Durée d'une session de révision**")
+    durees = sorted(set(DUREES_SESSION + [st.session_state.minutes_session]))
+    minutes = st.segmented_control("Durée d'une session", durees, default=st.session_state.minutes_session,
+                                   format_func=lambda valeur: f"{valeur} min", label_visibility="collapsed")
+
+    # 2. Suggestions : un clic ajoute des lignes au tableau, modifiables ensuite.
+    st.markdown("**Mes créneaux libres, chaque semaine**")
+    st.caption("Cliquez sur une suggestion pour remplir le tableau, puis ajustez les heures si besoin. "
+               "Le « + » en bas du tableau ajoute une ligne ; cochez une ligne pour la supprimer.")
+    zone_suggestions = st.container(horizontal=True)
+
+    # 3. Le tableau des créneaux : une ligne = un jour, une heure de début, une heure de fin.
+    tableau = st.data_editor(
+        pd.DataFrame(st.session_state.lignes_dispos, columns=list(COLONNES_TABLEAU)),
+        column_config=COLONNES_TABLEAU, num_rows="dynamic", hide_index=True, width="stretch",
+        key=f"tableau_dispos_{st.session_state.version_tableau}")
+    lignes = tableau.to_dict("records")
+    creneaux = lignes_vers_creneaux(lignes)
+    # Pourquoi une clé qui change (version) : quand une suggestion remplace les données,
+    # Streamlit doit repartir d'un tableau neuf au lieu de rejouer les anciennes modifications.
+
+    for nom, lignes_suggerees in SUGGESTIONS_CRENEAUX.items():
+        if zone_suggestions.button(nom, icon=":material/add:"):
+            st.session_state.lignes_dispos = lignes + lignes_suggerees
+            st.session_state.version_tableau += 1
+            st.rerun()
+    if zone_suggestions.button("Tout effacer", icon=":material/delete_sweep:"):
+        st.session_state.lignes_dispos = []
+        st.session_state.version_tableau += 1
+        st.rerun()
+    # Pourquoi `lignes + lignes_suggerees` : on garde ce que l'étudiant a déjà modifié à la main.
+
+    # 4. Résumé et enregistrement.
+    heures_libres = sum((datetime.combine(date.today(), ligne["Fin"]) -
+                         datetime.combine(date.today(), ligne["Début"])).total_seconds() / 3600
+                        for ligne in creneaux_vers_lignes(creneaux))
+    nombre_creneaux = sum(len(liste) for liste in creneaux.values())
+    col_resume, col_bouton = st.columns([3, 1], vertical_alignment="center")
+    col_resume.markdown(f"**{nombre_creneaux} créneau(x)** · {heures_libres:g} h libres par semaine")
+    modifie = creneaux != st.session_state.creneaux_enregistres or minutes != st.session_state.minutes_session
+    if modifie:
+        col_resume.caption(":orange[Modifications non enregistrées]")
+    if col_bouton.button("Enregistrer", type="primary", icon=":material/save:", width="stretch",
+                         disabled=not modifie or minutes is None):
+        try:
+            api_client.enregistrer_disponibilites(minutes, creneaux)
+        except api_client.ErreurApi as erreur:
+            st.error(erreur.message, icon=":material/error:")
+        else:
+            st.session_state.creneaux_enregistres = creneaux
+            st.session_state.minutes_session = minutes
+            st.toast("Disponibilités enregistrées.", icon=":material/check_circle:")
+            st.rerun()
+    # Pourquoi « Modifications non enregistrées » et un bouton grisé sinon : l'étudiant sait
+    # toujours si ce qu'il voit est sauvegardé, et ne clique pas pour rien.

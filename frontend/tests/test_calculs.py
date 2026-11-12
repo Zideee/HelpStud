@@ -1,6 +1,6 @@
 """Tests 11 et 12 (front) : calculs purs du front (frontend/calculs.py), sans Streamlit ni réseau."""
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from calculs import (
@@ -9,11 +9,13 @@ from calculs import (
     JOURS,
     PRIORITES,
     TYPES_ECHEANCE,
+    SUGGESTIONS_CRENEAUX,
     compter_sessions,
-    ecrire_creneaux,
+    creneaux_vers_lignes,
     jour_et_horaire,
     libelle,
-    lire_creneaux_saisis,
+    lignes_vers_creneaux,
+    prochaine_session,
     prochaines_echeances,
     semaine_iso,
 )
@@ -38,10 +40,22 @@ def test_semaine_iso_et_libelles() -> None:
     assert libelle(TYPES_ECHEANCE, "exam") == "Examen"
     # Une valeur inconnue s'affiche telle quelle au lieu de faire planter la page.
     assert libelle(PRIORITES, "urgent") == "urgent"
-    # Saisie des disponibilités : « 18:00-20:00, 21:00-22:00 » ↔ liste du contrat (P0-14).
-    assert lire_creneaux_saisis(" 18:00-20:00 , 21:00-22:00, ") == ["18:00-20:00", "21:00-22:00"]
-    assert lire_creneaux_saisis("") == []
-    assert ecrire_creneaux(["18:00-20:00", "21:00-22:00"]) == "18:00-20:00, 21:00-22:00"
+    # Disponibilités : tableau à l'écran (jour, début, fin) ↔ créneaux du contrat (P0-14).
+    lignes = creneaux_vers_lignes({"wednesday": ["14:00-17:00"], "monday": ["20:00-22:00", "18:00-19:00"]})
+    assert lignes == [  # triées par jour puis par heure, jours en français
+        {"Jour": "Lundi", "Début": time(18, 0), "Fin": time(19, 0)},
+        {"Jour": "Lundi", "Début": time(20, 0), "Fin": time(22, 0)},
+        {"Jour": "Mercredi", "Début": time(14, 0), "Fin": time(17, 0)},
+    ]
+    # Aller-retour sans perte ; une ligne incomplète (ajoutée puis pas remplie) est ignorée ;
+    # un doublon (suggestion cliquée deux fois) n'est envoyé qu'une fois.
+    incomplete = {"Jour": "Mardi", "Début": time(9, 0), "Fin": None}
+    assert lignes_vers_creneaux(lignes + [incomplete, lignes[0]]) == {
+        "monday": ["18:00-19:00", "20:00-22:00"], "wednesday": ["14:00-17:00"]}
+    assert lignes_vers_creneaux([]) == {}
+    # Une suggestion donne des lignes prêtes à modifier (ex. les soirs de semaine).
+    soirs = SUGGESTIONS_CRENEAUX["Soirs en semaine (18h–20h)"]
+    assert len(soirs) == 5 and soirs[0] == {"Jour": "Lundi", "Début": time(18, 0), "Fin": time(20, 0)}
     assert JOURS["monday"] == "Lundi" and len(JOURS) == 7
     # Pourquoi tester ces conversions : une semaine mal calculée (fin décembre) ou une faute
     # de frappe (« continous ») ferait échouer l'API alors que la page aurait l'air correcte.
@@ -58,6 +72,9 @@ def test_indicateurs_dashboard() -> None:
     ]
     # 1 faite ; 1 seule en retard : celle en cours n'est pas finie, celle de jeudi est à venir.
     assert compter_sessions(sessions, maintenant) == (1, 1)
+    # Prochaine session à faire : la 1re non faite et pas encore finie (celle en cours compte).
+    assert prochaine_session(sessions, maintenant)["start"] == "2026-11-18T11:30:00+01:00"
+    assert prochaine_session(sessions[:2], maintenant) is None  # plus rien à venir
 
     echeances = [
         {"title": "Partiel", "date": "2026-12-08"}, {"title": "Passée", "date": "2026-11-10"},
