@@ -17,10 +17,10 @@ notre spec détaillée : [`SPEC.md`](SPEC.md).
 
 <!-- Sprint 3 : cocher au fur et à mesure, avec le test qui le prouve. -->
 
-- [ ] Bloc 1 — Import de cours (PDF / Markdown) avec priorité et catégorie
-- [ ] Bloc 2 — Échéances (examens, contrôle continu) et disponibilités
-- [ ] Bloc 3 — Planning hebdomadaire
-- [ ] Bloc 4 — Export `.ics`
+- [x] Bloc 1 — Import de cours (PDF / Markdown) avec priorité et catégorie
+- [x] Bloc 2 — Échéances (examens, contrôle continu) et disponibilités
+- [x] Bloc 3 — Planning hebdomadaire
+- [x] Bloc 4 — Export `.ics`
 - [ ] Bloc 5 — Front de suivi et dashboard
 - [ ] Bonus 1 — Indisponibilités ponctuelles
 
@@ -160,6 +160,6 @@ Règles : [`AGENTS.md`](AGENTS.md) — journal : [`AI_LOG.md`](AI_LOG.md).
 
 | Membre | Sprint 1 | Sprint 2 | Sprint 3 |
 |---|---|---|---|
-| Johann | | | |
+| Johann |  Seraphin |  Ken-andrew | |
 | | | | |
 | | | | |
