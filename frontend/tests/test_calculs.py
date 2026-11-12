@@ -30,11 +30,11 @@ def test_semaine_iso_et_libelles() -> None:
 
     # Ce que l'étudiant choisit à l'écran → ce que l'API attend.
     assert PRIORITES["Haute"] == "high" and PRIORITES["Basse"] == "low"
-    assert CATEGORIES["Contrôle continu"] == "continuous" and CATEGORIES["Non précisée"] is None
+    assert CATEGORIES["Contrôle continu"] == "continuous" and CATEGORIES["Sans échéance"] is None
     assert TYPES_ECHEANCE["Contrôle continu"] == "assignment"
     # Ce que l'API renvoie → ce qu'on affiche (sens inverse).
     assert libelle(PRIORITES, "medium") == "Moyenne"
-    assert libelle(CATEGORIES, None) == "Non précisée"
+    assert libelle(CATEGORIES, None) == "Sans échéance"  # catégorie calculée, aucune date
     assert libelle(TYPES_ECHEANCE, "exam") == "Examen"
     # Une valeur inconnue s'affiche telle quelle au lieu de faire planter la page.
     assert libelle(PRIORITES, "urgent") == "urgent"

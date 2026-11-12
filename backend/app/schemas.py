@@ -52,10 +52,9 @@ class CoursResume(BaseModel):
 
 
 class ModificationCours(BaseModel):
-    """Corps de PATCH /courses/{id} : on n'envoie que ce qui change."""
+    """Corps de PATCH /courses/{id} : la priorité (la catégorie est calculée, pas modifiable)."""
 
-    priority: Priorite | None = None
-    category: Categorie | None = None
+    priority: Priorite
 
 
 # --- Échéances -----------------------------------------------------------------------

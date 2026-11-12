@@ -29,7 +29,7 @@ def test_client_appelle_les_routes_du_contrat(monkeypatch: pytest.MonkeyPatch) -
         204 if requete.method == "DELETE" else 200, json=None if requete.method == "DELETE" else {}))
 
     api_client.lister_cours()
-    api_client.importer_cours("SQL.md", b"# A\ntexte", "high", "mixed")
+    api_client.importer_cours("cours.pdf", b"%PDF-factice", "high")
     api_client.modifier_cours(3, priorite="low")
     api_client.lister_echeances()
     api_client.creer_echeance(3, "Examen", "exam", date(2026, 12, 18), 60)
@@ -49,6 +49,7 @@ def test_client_appelle_les_routes_du_contrat(monkeypatch: pytest.MonkeyPatch) -
     ]
     # Les corps envoyés respectent le contrat (noms de champs en anglais, date ISO).
     assert b'name="priority"' in recues[1].content and b"high" in recues[1].content
+    assert b"category" not in recues[1].content  # la catégorie n'est plus envoyée (CA2.7)
     assert recues[4].read() == (b'{"course_id":3,"title":"Examen","type":"exam",'
                                 b'"date":"2026-12-18","weight":60}')
     assert recues[9].url.params["week"] == "2026-W47"
