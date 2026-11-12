@@ -1,0 +1,175 @@
+%PDF-1.3
+%âãÏÓ
+1 0 obj
+<<
+/Producer (pypdf)
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 5
+/Kids [ 4 0 R 6 0 R 8 0 R 10 0 R 12 0 R ]
+>>
+endobj
+3 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 5 0 R
+>>
+endobj
+5 0 obj
+<<
+/Length 1647
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 1 — Introduction aux bases de données relationnelles) Tj T* () Tj T* (Une base de données relationnelle range les informations dans des tables. Chaque table) Tj T* (représente un type d'objet, par exemple des étudiants, des cours ou des inscriptions.) Tj T* (Une ligne correspond à un objet précis et une colonne à une de ses propriétés. Ce modèle) Tj T* (a été proposé par Edgar F. Codd en 1970 et il reste aujourd'hui le plus utilisé en) Tj T* (entreprise, car il est simple à comprendre et repose sur des bases mathématiques solides.) Tj T* () Tj T* (Chaque table possède une clé primaire : une colonne, ou un groupe de colonnes, dont la) Tj T* (valeur est unique pour chaque ligne. Elle permet d'identifier une ligne sans ambiguïté.) Tj T* (Une clé étrangère est une colonne qui fait référence à la clé primaire d'une autre table.) Tj T* (C'est elle qui crée les liens entre les tables, par exemple entre une inscription et) Tj T* (l'étudiant concerné.) Tj T* () Tj T* (Le langage SQL \(Structured Query Language\) sert à décrire les données que l'on veut) Tj T* (obtenir, et non la manière de les obtenir. C'est le moteur de la base qui choisit le) Tj T* (meilleur chemin pour exécuter la requête. On distingue plusieurs familles d'instructions :) Tj T* (la définition des tables avec CREATE et ALTER, la manipulation des données avec INSERT,) Tj T* (UPDATE et DELETE, et l'interrogation avec SELECT.) Tj T* () Tj T* (À retenir : une bonne base commence par un bon schéma. Avant d'écrire la moindre requête,) Tj T* (on identifie les entités, leurs attributs et les relations entre elles.) Tj T* () Tj ET
+endstream
+endobj
+6 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<<
+/Length 1430
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 2 — Requêtes de sélection) Tj T* () Tj T* (L'instruction SELECT permet de lire des données. Sa forme la plus simple indique les) Tj T* (colonnes voulues et la table source : SELECT nom, prenom FROM etudiants. L'étoile permet) Tj T* (de récupérer toutes les colonnes, mais on l'évite en production car elle renvoie souvent) Tj T* (plus de données que nécessaire et rend le code fragile si la table évolue.) Tj T* () Tj T* (La clause WHERE filtre les lignes selon une condition. On peut combiner plusieurs) Tj T* (conditions avec AND et OR, et utiliser des opérateurs comme BETWEEN, IN ou LIKE. Par) Tj T* (exemple, WHERE ville IN \('Paris', 'Nice'\) garde seulement les étudiants de ces deux) Tj T* (villes. Attention à la valeur NULL : elle ne se compare pas avec le signe égal, il faut) Tj T* (écrire IS NULL ou IS NOT NULL.) Tj T* () Tj T* (La clause ORDER BY trie le résultat, par ordre croissant par défaut ou décroissant avec) Tj T* (DESC. LIMIT restreint le nombre de lignes renvoyées, ce qui est utile pour afficher les) Tj T* (dix premiers résultats d'un classement. DISTINCT supprime les doublons.) Tj T* () Tj T* (L'ordre d'écriture d'une requête n'est pas l'ordre d'exécution. Le moteur lit d'abord) Tj T* (FROM, puis WHERE, puis SELECT, puis ORDER BY. Comprendre cet ordre explique pourquoi un) Tj T* (alias défini dans SELECT ne peut pas être utilisé dans WHERE.) Tj T* () Tj ET
+endstream
+endobj
+8 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 9 0 R
+>>
+endobj
+9 0 obj
+<<
+/Length 1376
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 3 — Jointures) Tj T* () Tj T* (Les jointures combinent les lignes de plusieurs tables à partir d'une condition, en) Tj T* (général l'égalité entre une clé étrangère et une clé primaire. La jointure interne,) Tj T* (INNER JOIN, ne garde que les lignes qui ont une correspondance des deux côtés. Si un) Tj T* (étudiant n'est inscrit à aucun cours, il n'apparaît pas dans le résultat.) Tj T* () Tj T* (La jointure externe gauche, LEFT JOIN, garde toutes les lignes de la table de gauche,) Tj T* (même sans correspondance. Les colonnes de la table de droite valent alors NULL. C'est) Tj T* (la jointure à utiliser pour répondre à une question comme « quels étudiants n'ont rendu) Tj T* (aucun devoir ? » : on fait un LEFT JOIN puis on filtre les lignes où la clé de droite) Tj T* (est NULL.) Tj T* () Tj T* (Il existe aussi RIGHT JOIN, symétrique de LEFT JOIN, et FULL OUTER JOIN, qui garde) Tj T* (toutes les lignes des deux côtés. SQLite ne propose pas toutes ces variantes dans ses) Tj T* (anciennes versions, ce qui oblige parfois à réécrire la requête avec un LEFT JOIN.) Tj T* () Tj T* (Une erreur fréquente consiste à oublier la condition de jointure. On obtient alors un) Tj T* (produit cartésien : chaque ligne de la première table est associée à chaque ligne de la) Tj T* (seconde, et le résultat explose en taille.) Tj T* () Tj ET
+endstream
+endobj
+10 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 11 0 R
+>>
+endobj
+11 0 obj
+<<
+/Length 878
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 4 — Agrégations et regroupements) Tj T* () Tj T* (Les fonctions d'agrégation calculent une valeur à partir de plusieurs lignes : COUNT) Tj T* (compte, SUM additionne, AVG calcule une moyenne, MIN et MAX donnent les extrêmes.) Tj T* (Utilisées) Tj T* (seules, elles résument toute la table en une seule ligne.) Tj T* () Tj T* (La clause GROUP BY forme des groupes de lignes qui partagent la même valeur, puis applique) Tj T* (l'agrégation à chaque groupe. Par exemple, on peut compter le nombre d'inscrits par cours.) Tj T* (Toute colonne du SELECT qui n'est pas agrégée doit apparaître dans le GROUP BY.) Tj T* () Tj T* (Pour filtrer sur le résultat d'une agrégation, on utilise HAVING et non WHERE, car WHERE) Tj T* (agit avant le regroupement. Exemple : garder seulement les cours qui ont plus de trente) Tj T* (inscrits.) Tj T* () Tj ET
+endstream
+endobj
+12 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 13 0 R
+>>
+endobj
+13 0 obj
+<<
+/Length 974
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 5 — Normalisation) Tj T* () Tj T* (La normalisation est une méthode pour organiser les tables afin d'éviter la redondance et) Tj T* (les incohérences. Une information ne doit être stockée qu'à un seul endroit : si l'adresse) Tj T* (d'un étudiant est recopiée dans chaque inscription, il suffit d'oublier une mise à jour) Tj T* (pour que la base se contredise.) Tj T* () Tj T* (La première forme normale impose des valeurs atomiques : une cellule ne contient qu'une) Tj T* (seule valeur. La deuxième forme normale impose que chaque colonne dépende de toute la clé) Tj T* (primaire, et pas seulement d'une partie. La troisième forme normale interdit qu'une) Tj T* (colonne) Tj T* (dépende d'une autre colonne qui n'est pas une clé.) Tj T* () Tj T* (En pratique, on normalise jusqu'à la troisième forme normale, puis on dénormalise parfois) Tj T* (volontairement pour gagner en performance, par exemple dans un entrepôt de données.) Tj ET
+endstream
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000015 00000 n 
+0000000054 00000 n 
+0000000139 00000 n 
+0000000188 00000 n 
+0000000396 00000 n 
+0000002095 00000 n 
+0000002303 00000 n 
+0000003785 00000 n 
+0000003993 00000 n 
+0000005421 00000 n 
+0000005631 00000 n 
+0000006561 00000 n 
+0000006771 00000 n 
+trailer
+<<
+/Size 14
+/Root 3 0 R
+/Info 1 0 R
+>>
+startxref
+7797
+%%EOF

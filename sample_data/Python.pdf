@@ -1,0 +1,175 @@
+%PDF-1.3
+%âãÏÓ
+1 0 obj
+<<
+/Producer (pypdf)
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 5
+/Kids [ 4 0 R 6 0 R 8 0 R 10 0 R 12 0 R ]
+>>
+endobj
+3 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 5 0 R
+>>
+endobj
+5 0 obj
+<<
+/Length 997
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 1 — Variables et types de base) Tj T* () Tj T* (En Python, une variable est un nom qui désigne une valeur. On ne déclare pas son type :) Tj T* (Python le déduit de la valeur affectée. Les types de base sont les entiers, les nombres) Tj T* (à virgule flottante, les chaînes de caractères et les booléens. La fonction type permet) Tj T* (de connaître le type d'une valeur à tout moment.) Tj T* () Tj T* (Les chaînes de caractères sont immuables : on ne peut pas modifier une lettre en place,) Tj T* (on crée une nouvelle chaîne. Les f-strings permettent d'insérer des valeurs dans un texte) Tj T* (de façon lisible, en préfixant la chaîne par la lettre f et en plaçant les expressions) Tj T* (entre accolades.) Tj T* () Tj T* (Les annotations de type, comme nombre: int, ne changent pas l'exécution du programme.) Tj T* (Elles servent à documenter le code et permettent à des outils de détecter des erreurs) Tj T* (avant de lancer le programme.) Tj T* () Tj ET
+endstream
+endobj
+6 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 7 0 R
+>>
+endobj
+7 0 obj
+<<
+/Length 1033
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 2 — Structures de contrôle) Tj T* () Tj T* (Les conditions s'écrivent avec if, elif et else. Le bloc de code concerné est défini par) Tj T* (l'indentation, et non par des accolades comme dans d'autres langages. Une indentation) Tj T* (incohérente provoque donc une erreur.) Tj T* () Tj T* (La boucle for parcourt les éléments d'une séquence : une liste, une chaîne, ou un) Tj T* (intervalle produit par range. La boucle while répète un bloc tant qu'une condition est) Tj T* (vraie ; il faut s'assurer que cette condition finit par devenir fausse, sinon la boucle) Tj T* (ne s'arrête jamais. Les mots-clés break et continue permettent respectivement de sortir) Tj T* (de la boucle ou de passer directement à l'itération suivante.) Tj T* () Tj T* (La fonction enumerate donne à la fois l'indice et l'élément, et zip parcourt plusieurs) Tj T* (séquences en parallèle. Ces deux fonctions évitent de manipuler des indices à la main,) Tj T* (ce qui est une source fréquente d'erreurs.) Tj T* () Tj ET
+endstream
+endobj
+8 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 9 0 R
+>>
+endobj
+9 0 obj
+<<
+/Length 1147
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 3 — Fonctions) Tj T* () Tj T* (Une fonction regroupe des instructions sous un nom pour pouvoir les réutiliser. Elle se) Tj T* (définit avec le mot-clé def, reçoit des paramètres et renvoie une valeur avec return. Une) Tj T* (fonction sans return renvoie None.) Tj T* () Tj T* (Une bonne fonction fait une seule chose et porte un nom qui décrit cette chose. Elle est) Tj T* (courte, ce qui la rend facile à lire et à tester. Sa docstring, placée juste sous la) Tj T* (ligne def, explique en une phrase ce qu'elle fait.) Tj T* () Tj T* (Les paramètres peuvent avoir une valeur par défaut. Attention : une valeur par défaut) Tj T* (mutable, comme une liste vide, est créée une seule fois et partagée entre tous les) Tj T* (appels, ce qui provoque des bugs surprenants. On utilise None comme valeur par défaut à) Tj T* (la place, puis on crée la liste dans le corps de la fonction.) Tj T* () Tj T* (Une fonction pure ne dépend que de ses paramètres et ne modifie rien à l'extérieur.) Tj T* (Elle donne toujours le même résultat pour les mêmes entrées, ce qui la rend très) Tj T* (simple à tester.) Tj T* () Tj ET
+endstream
+endobj
+10 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 11 0 R
+>>
+endobj
+11 0 obj
+<<
+/Length 661
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 4 — Listes et dictionnaires) Tj T* () Tj T* (La liste est une séquence ordonnée et modifiable. On ajoute un élément avec append, on) Tj T* (accède à un élément par son indice, et on extrait une partie avec le découpage. Le) Tj T* (dictionnaire associe des clés à des valeurs ; l'accès par clé est très rapide, même avec) Tj T* (beaucoup d'éléments.) Tj T* () Tj T* (Les compréhensions de liste permettent de construire une liste à partir d'une autre en) Tj T* (une ligne. Elles sont pratiques, mais une compréhension trop longue devient illisible :) Tj T* (dans ce cas, une boucle classique est préférable.) Tj T* () Tj ET
+endstream
+endobj
+12 0 obj
+<<
+/Type /Page
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+>>
+>>
+>>
+/MediaBox [ 0.0 0.0 612 792 ]
+/Parent 2 0 R
+/Contents 13 0 R
+>>
+endobj
+13 0 obj
+<<
+/Length 934
+>>
+stream
+BT /F1 10 Tf 14 TL 50 742 Td (Chapitre 5 — Tests avec pytest) Tj T* () Tj T* (Un test automatique vérifie qu'une fonction renvoie le résultat attendu. Avec pytest, un) Tj T* (test est une simple fonction dont le nom commence par test, et la vérification s'écrit) Tj T* (avec le mot-clé assert. Pytest découvre et lance tous les tests du projet avec une seule) Tj T* (commande.) Tj T* () Tj T* (Les fixtures préparent ce dont les tests ont besoin, par exemple une base de données) Tj T* (temporaire, et la nettoient ensuite. Elles évitent de répéter le même code de préparation) Tj T* (dans chaque test et garantissent que les tests ne s'influencent pas entre eux.) Tj T* () Tj T* (On écrit un test pour chaque règle métier et pour chaque cas limite : une liste vide, une) Tj T* (valeur nulle, une date dans le passé. Un test qui échoue avant la correction puis réussit) Tj T* (après est la meilleure preuve qu'un bug est réglé.) Tj ET
+endstream
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000015 00000 n 
+0000000054 00000 n 
+0000000139 00000 n 
+0000000188 00000 n 
+0000000396 00000 n 
+0000001444 00000 n 
+0000001652 00000 n 
+0000002737 00000 n 
+0000002945 00000 n 
+0000004144 00000 n 
+0000004354 00000 n 
+0000005067 00000 n 
+0000005277 00000 n 
+trailer
+<<
+/Size 14
+/Root 3 0 R
+/Info 1 0 R
+>>
+startxref
+6263
+%%EOF
