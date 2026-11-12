@@ -75,7 +75,7 @@ Voir [`SPEC.md`](SPEC.md) §5 et le journal des décisions (§11).
 <!-- Sprint 3 : comment l'IA a aidé à construire le projet, ce qu'on a rejeté et pourquoi. -->
 
 L'IA sert à **construire** le produit, jamais à le faire tourner.
-Règles : [`AGENTS.md`](AGENTS.md) — journal : [`AI_LOG.md`](AI_LOG.md).
+Règles : [`AGENTS.md`](AGENTS.md).
 
 ## 9. Limites et pistes
 

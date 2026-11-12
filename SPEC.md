@@ -20,7 +20,6 @@ Une tâche est finie quand **toutes** ces cases sont cochées :
 - [ ] le contrat d'API (section 4) n'est pas cassé ;
 - [ ] chaque fonction a une docstring courte et un commentaire « pourquoi » ;
 - [ ] le Navigator+Tester a relu le diff et sait l'expliquer ligne par ligne ;
-- [ ] l'usage de l'IA est noté dans `AI_LOG.md` ;
 - [ ] la PR est relue par un autre membre puis fusionnée dans `main`.
 
 ## 3. MVP — les 5 blocs (tous obligatoires)
@@ -261,7 +260,7 @@ Hors des 12 : le test du bonus 1 (indisponibilités) sera ajouté au Sprint 3 si
 |---|---|---|
 | Sprint 1 | **MVP complet** : métier, API et front (blocs 1 à 5), tâches P0 de [`docs/sprint1/P0.md`](docs/sprint1/P0.md) | 1 à 12 |
 | Sprint 2 | Compléments P1 de [`docs/sprint1/P1.md`](docs/sprint1/P1.md) (PDF, erreurs, dashboard, vérification .ics) | 1 à 12 (+ tests P1 validés par le PO) |
-| Sprint 3 | Bonus 1 (indisponibilités), README, démo, AI_LOG relu | 1 à 12 (+ test du bonus si validé) |
+| Sprint 3 | Bonus 1 (indisponibilités), README, démo | 1 à 12 (+ test du bonus si validé) |
 | Gel | Plus aucune fonctionnalité : corrections seulement | tous verts |
 
 Rôles tournants à chaque sprint : **Product Owner**, **Driver**, **Navigator+Tester**.
@@ -279,7 +278,7 @@ Dates des sprints et du gel : **à fixer** (seule question encore ouverte).
 | Planificateur trop complexe | Retard, code inexplicable | Algorithme glouton simple (§5.2) : pas d'optimisation. |
 | Conflits Git | Temps perdu | Petits commits, `git pull --rebase` avant chaque push, une PR par tâche. |
 | Un membre absent | Personne ne connaît sa partie | Rotation des rôles + règle « chacun explique chaque ligne ». |
-| Code généré par l'IA qu'on ne sait pas expliquer | Échec à l'oral | On ne le livre pas : on le réécrit plus simplement, et on le note dans `AI_LOG.md`. |
+| Code généré par l'IA qu'on ne sait pas expliquer | Échec à l'oral | On ne le livre pas : on le réécrit plus simplement. |
 | SQLite partagé entre tests | Tests qui s'influencent | Une base temporaire par test (fixture dans `conftest.py`). |
 | Le score avec priorité devient difficile à expliquer | Échec à l'oral, bugs | Formule unique sur une ligne + exemples chiffrés du §5.2 repris dans le test 3. |
 | Le bonus « indisponibilités » déborde sur les 5 blocs | Blocs obligatoires pas finis | Il n'est commencé qu'au Sprint 3, une fois les tests 1 à 12 verts. |

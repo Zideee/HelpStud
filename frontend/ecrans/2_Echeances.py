@@ -17,7 +17,9 @@ from calculs import (
 )
 from ui import badge_jours_restants, badge_type, entete
 
-DUREES_SESSION = [30, 45, 60, 90, 120]
+DUREES_SESSION = {60: "1 h", 90: "1 h 30", 120: "2 h"}
+# Pourquoi 1 h à 2 h : règle de l'équipe, vérifiée aussi par l'API (422 sinon).
+# Pourquoi un dictionnaire minutes → libellé : on affiche « 1 h 30 », on envoie 90 à l'API.
 COLONNES_TABLEAU = {
     "Jour": st.column_config.SelectboxColumn("Jour", options=list(JOURS.values()), required=True),
     "Début": st.column_config.TextColumn("Début", help="Tapez l'heure : 18h, 18:30, 9h15…",
@@ -107,10 +109,12 @@ with onglet_dispos:
     # cours de modification doit survivre à ces relances. On ne lit l'API qu'une fois.
 
     # 1. Durée d'une session : un clic, pas de saisie.
-    st.markdown("**Durée d'une session de révision**")
-    durees = sorted(set(DUREES_SESSION + [st.session_state.minutes_session]))
-    minutes = st.segmented_control("Durée d'une session", durees, default=st.session_state.minutes_session,
-                                   format_func=lambda valeur: f"{valeur} min", label_visibility="collapsed")
+    st.markdown("**Durée d'une session de révision** (entre 1 h et 2 h)")
+    duree_par_defaut = st.session_state.minutes_session if st.session_state.minutes_session in DUREES_SESSION else 60
+    minutes = st.segmented_control("Durée d'une session", list(DUREES_SESSION), default=duree_par_defaut,
+                                   format_func=DUREES_SESSION.get, label_visibility="collapsed")
+    # Pourquoi revenir à 1 h si la durée enregistrée sort des choix : une ancienne valeur
+    # (ex. 45 min) n'est plus permise ; l'étudiant voit tout de suite un choix valide.
 
     # 2. Suggestions : un clic ajoute des lignes au tableau, modifiables ensuite.
     st.markdown("**Mes créneaux libres, chaque semaine**")

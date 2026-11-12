@@ -11,6 +11,7 @@ from ui import entete
 NOMS_DES_MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
                  "septembre", "octobre", "novembre", "décembre"]
 SESSIONS_VISIBLES_PAR_CASE = 3
+HAUTEUR_CASE_SEMAINE, HAUTEUR_CASE_MOIS = 380, 150   # pixels : toutes les cases ont la même taille
 # Pourquoi limiter à 3 par case dans la vue Mois : les cases gardent la même taille ;
 # « +2 » indique qu'il y en a d'autres (visibles dans la vue Semaine).
 
@@ -121,18 +122,18 @@ def afficher_echeances(jour_case: date) -> None:
 
 
 def afficher_session_detaillee(session: dict) -> None:
-    """Une session en vue Semaine : horaire, cours, chapitre et interrupteur « Faite »."""
+    """Une session en vue Semaine : « 18:00 SQL », le chapitre en petit, et la case « Faite »."""
     _, horaire = jour_et_horaire(session["start"], session["end"])
-    chapitre = titres_des_chapitres.get(session["chapter_id"], "?")
-    with st.container(border=True):
-        st.markdown(f"**{horaire[:5]}** · {noms_des_cours.get(session['course_id'], '?')}")
-        st.caption(chapitre.split(" — ", 1)[-1], help=f"{horaire} — {chapitre}")
-        faite = st.checkbox("Faite", value=session["done"], key=f"faite-{session['id']}")
-        if faite != session["done"]:
-            api_client.marquer_session(session["id"], faite)
-            st.rerun()
-    # Pourquoi un texte court (« 18:00 · SQL », chapitre sans « Chapitre N — ») : une colonne
-    # du calendrier est étroite ; l'horaire et le titre complets sont dans l'info-bulle (?).
+    court = titres_des_chapitres.get(session["chapter_id"], "?").split(" — ", 1)[-1]
+    st.markdown(f"**{horaire[:5]}** {noms_des_cours.get(session['course_id'], '?')}")
+    st.caption(f"~~{court}~~" if session["done"] else court)
+    faite = st.checkbox("Faite", value=session["done"], key=f"faite-{session['id']}")
+    if faite != session["done"]:
+        api_client.marquer_session(session["id"], faite)
+        st.rerun()
+    # Pourquoi le chapitre en petit texte et une case « Faite » courte : la case du jour est
+    # étroite ; un long libellé de case à cocher s'écrivait lettre par lettre.
+    # Pourquoi le chapitre sans « Chapitre N — » : gagner de la place ; une session faite est barrée.
     # Pourquoi comparer `faite` à session["done"] : on n'appelle l'API que si l'étudiant a
     # vraiment changé la case ; st.rerun() réaffiche le calendrier à jour.
 
@@ -147,17 +148,19 @@ def afficher_session_resumee(session: dict) -> None:
 
 if vue == "Semaine":
     for colonne, jour_case in zip(st.columns(7, gap="small"), semaines[0]):
-        with colonne:
+        with colonne.container(border=True, height=HAUTEUR_CASE_SEMAINE):
             st.markdown(titre_du_jour(jour_case, None))
             afficher_echeances(jour_case)
             for session in rangees.get(jour_case, []):
                 afficher_session_detaillee(session)
+    # Pourquoi une case encadrée par jour, même vide : c'est un vrai calendrier ; on voit
+    # d'un coup d'œil les jours libres et les jours chargés.
 else:
     for colonne, nom in zip(st.columns(7, gap="small"), JOURS_COURTS):
         colonne.caption(nom)
     for semaine in semaines:
         for colonne, jour_case in zip(st.columns(7, gap="small"), semaine):
-            with colonne.container(border=True, height=150):
+            with colonne.container(border=True, height=HAUTEUR_CASE_MOIS):
                 st.markdown(titre_du_jour(jour_case, jour.month))
                 afficher_echeances(jour_case)
                 sessions_du_jour = rangees.get(jour_case, [])
