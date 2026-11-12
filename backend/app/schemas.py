@@ -46,6 +46,9 @@ class CoursResume(BaseModel):
     progress: float
     priority: Priorite
     category: Categorie | None
+    chapters: list[Chapitre] = []
+    # Pourquoi ce champ (extension du contrat) : la page Planning affiche le titre du
+    # chapitre de chaque session. On AJOUTE un champ, on n'en retire aucun : le contrat tient.
 
 
 class ModificationCours(BaseModel):

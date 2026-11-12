@@ -43,7 +43,7 @@ Erreurs : `POST /courses` → `415` format non supporté, `422` fichier vide ;
 ```
 POST   /courses              + form fields optionnels priority (high|medium|low, défaut medium)
                                et category (exam|continuous|mixed, défaut null) ; réponse + priority, category
-GET    /courses              + priority, category
+GET    /courses              + priority, category, chapters [{id, title, hours}]
 PATCH  /courses/{id}         {priority?, category?} -> 200 | 404 | 422
 GET    /plan.ics?week=...    optionnel : une seule semaine
 POST   /unavailability       {start, end, reason} -> 201   (bonus)
