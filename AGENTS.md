@@ -11,6 +11,10 @@
   planning de révisions hebdomadaire, l'exporte en `.ics` et suit l'avancement.
 - Spec officielle : [`docs/STUDYPLAN_SPEC.md`](docs/STUDYPLAN_SPEC.md) (fait foi).
   Notre spec détaillée : [`SPEC.md`](SPEC.md) (règles métier, tests, décisions).
+- **Plan de travail du Sprint 1** : [`docs/sprint1/P0.md`](docs/sprint1/P0.md) (16 tâches
+  obligatoires, dans l'ordre, avec signatures exactes) puis
+  [`docs/sprint1/P1.md`](docs/sprint1/P1.md). **Avant de coder, une IA lit la tâche
+  concernée** et en respecte les signatures ; elle ne code pas la tâche suivante en avance.
 - Objectif double : une app **qui marche** et une équipe qui sait **expliquer chaque ligne**.
 
 ## 2. Règles absolues (ne jamais enfreindre)
@@ -96,6 +100,7 @@ frontend/fake_data.py            données factices au format exact de l'API
 frontend/pages/                  1_Import.py, 2_Echeances.py, 3_Planning.py, 4_Dashboard.py
 sample_data/                     3 cours .md, deadlines.csv, availability.json
 docs/                            spec officielle
+docs/sprint1/                    P0.md (tâches obligatoires), P1.md (compléments)
 SPEC.md, AGENTS.md, AI_LOG.md, README.md, requirements.txt
 ```
 
@@ -152,6 +157,9 @@ Toutes les commandes se lancent **depuis la racine du dépôt**, venv activé.
 | **Product Owner** | Porte `SPEC.md` et les priorités, dit non aux dérives. |
 | **Driver** | Au clavier, pilote l'IA, enchaîne les étapes. |
 | **Navigator + Tester** | Relit chaque diff et chaque commande, écrit les tests d'abord, tient `AI_LOG.md`, chasse les cas limites. |
+
+**Une seule personne code** : le Driver. Les deux autres ne commitent pas sur la branche
+en cours (ils écrivent les tests avec le Driver, relisent et valident).
 
 ## 9. Usage de l'IA
 

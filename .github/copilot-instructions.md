@@ -7,7 +7,8 @@
 HelpStud (sujet « StudyPlan ») : l'étudiant importe ses cours (PDF / Markdown) et ses
 échéances ; l'app génère un planning de révisions hebdomadaire, l'exporte en `.ics`
 et suit l'avancement. Back FastAPI + SQLite (`sqlite3`), front Streamlit, tests pytest.
-Spec détaillée : `SPEC.md`.
+Spec détaillée : `SPEC.md`. Plan de travail : `docs/sprint1/P0.md` (tâches obligatoires,
+dans l'ordre, signatures exactes) puis `docs/sprint1/P1.md` — lire la tâche avant de coder.
 
 ## Règles absolues
 1. **Aucune IA dans le produit** : aucune API d'IA, aucune lib LLM dans le code ou

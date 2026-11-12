@@ -220,12 +220,13 @@ Tests ajoutés pour les demandes de l'équipe :
 
 | Jalon | Contenu | Tests visés |
 |---|---|---|
-| Sprint 1 | Back + planificateur + .ics (blocs 1 à 4 côté back), priorité et catégorie | 1 à 11, 13 à 15 |
-| Sprint 2 | Front + dashboard (bloc 5), branchement sur l'API | 12 |
+| Sprint 1 | **MVP complet** : métier, API et front (blocs 1 à 5), tâches P0 de [`docs/sprint1/P0.md`](docs/sprint1/P0.md) | 1 à 15 |
+| Sprint 2 | Compléments P1 de [`docs/sprint1/P1.md`](docs/sprint1/P1.md) (PDF, erreurs, dashboard, vérification .ics) | 1 à 15 + tests P1 |
 | Sprint 3 | Bonus 1 (indisponibilités), README, démo, AI_LOG relu | 16 + tous |
 | Gel | Plus aucune fonctionnalité : corrections seulement | tous verts |
 
 Rôles tournants à chaque sprint : **Product Owner**, **Driver**, **Navigator+Tester**.
+**Une seule personne code** (le Driver) ; les deux autres écrivent les tests, relisent et valident.
 Dates des sprints et du gel : **à fixer** (seule question encore ouverte).
 
 ## 10. Risques et plan B
