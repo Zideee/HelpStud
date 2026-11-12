@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.db import chemin_base, initialiser_base
-from app.routers import availability, deadlines
+from app.routers import availability, courses, deadlines
 
 
 @asynccontextmanager
@@ -22,6 +22,7 @@ app = FastAPI(title="HelpStud API", version="0.1.0", lifespan=cycle_de_vie)
 # Pourquoi une variable `app` au niveau du module : c'est ce que uvicorn cherche
 # quand on lance `uvicorn app.main:app` (module app.main, objet app).
 
+app.include_router(courses.router)
 app.include_router(deadlines.router)
 app.include_router(availability.router)
 # Pourquoi un router par fichier : chaque ressource du contrat a son fichier, plus facile

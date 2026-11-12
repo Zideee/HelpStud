@@ -2,11 +2,16 @@
 
 from contextlib import closing
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from app.db import chemin_base, ouvrir_connexion
 from app.services.planner import FUSEAU
+
+DONNEES_DEMO = Path(__file__).parents[2] / "sample_data"
+# Pourquoi un chemin calculé depuis ce fichier : le test marche quel que soit le dossier
+# d'où l'on lance pytest.
 
 
 def creer_cours_en_base(nom: str) -> int:
@@ -50,3 +55,42 @@ def test_api_echeances(client: TestClient) -> None:
     assert client.delete(f"/deadlines/{projet.json()['id']}").status_code == 404
     # Pourquoi calculer les dates à partir d'aujourd'hui : une date écrite en dur
     # (« 2026-12-01 ») deviendrait « passée » un jour et le test casserait tout seul.
+
+
+def envoyer_cours(client: TestClient, nom_fichier: str, contenu: bytes, **champs: str):
+    """Envoie un fichier à POST /courses, avec d'éventuels champs priority / category."""
+    return client.post("/courses", files={"file": (nom_fichier, contenu)}, data=champs)
+
+
+def test_api_import_cours(client: TestClient) -> None:
+    """Test 6 : upload .md → 201 avec chapitres et charge ; priorité et catégorie enregistrées
+    (défauts sinon) et modifiables ; .docx → 415 (CA1.1, CA1.6, CA1.7)."""
+    # 1. Import avec priorité et catégorie choisies avant l'upload.
+    sql = envoyer_cours(client, "SQL.md", (DONNEES_DEMO / "SQL.md").read_bytes(),
+                        priority="high", category="mixed")
+    assert sql.status_code == 201
+    corps = sql.json()
+    assert corps["name"] == "SQL"
+    assert len(corps["chapters"]) == 5 and corps["hours_total"] == 6.0
+    assert corps["priority"] == "high" and corps["category"] == "mixed"
+
+    # 2. Sans ces champs : valeurs par défaut (moyenne, catégorie non précisée).
+    python = envoyer_cours(client, "Python.md", (DONNEES_DEMO / "Python.md").read_bytes()).json()
+    assert python["priority"] == "medium" and python["category"] is None
+
+    # 3. GET /courses : les deux cours, avancement à 0 tant qu'aucune session n'est faite.
+    liste = client.get("/courses").json()
+    assert [(c["name"], c["priority"], c["progress"]) for c in liste] == [
+        ("SQL", "high", 0.0), ("Python", "medium", 0.0)]
+
+    # 4. Priorité modifiable après l'import ; la catégorie non envoyée ne change pas.
+    modifie = client.patch(f"/courses/{python['id']}", json={"priority": "low"})
+    assert modifie.status_code == 200
+    assert modifie.json()["priority"] == "low" and modifie.json()["category"] is None
+
+    # 5. Erreurs : mauvais format → 415 ; priorité inconnue → 422 ; cours inconnu → 404.
+    assert envoyer_cours(client, "notes.docx", b"x").status_code == 415
+    assert envoyer_cours(client, "a.md", b"# A texte", priority="urgent").status_code == 422
+    assert client.patch("/courses/999", json={"priority": "low"}).status_code == 404
+    # Pourquoi les vrais fichiers de sample_data : on teste avec les données de la démo,
+    # donc la démo est garantie de fonctionner (SQL.md = 5 chapitres, 6 h).
