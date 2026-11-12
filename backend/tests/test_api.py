@@ -72,7 +72,8 @@ def test_api_import_cours(client: TestClient) -> None:
     assert sql.status_code == 201
     corps = sql.json()
     assert corps["name"] == "SQL"
-    assert len(corps["chapters"]) == 5 and corps["hours_total"] == 6.0
+    assert len(corps["chapters"]) == 5
+    assert corps["hours_total"] == sum(chapitre["hours"] for chapitre in corps["chapters"])  # CA1.5
     assert corps["priority"] == "high" and corps["category"] == "mixed"
     # GET /courses renvoie aussi les chapitres (extension : le Planning affiche leurs titres).
     assert client.get("/courses").json()[0]["chapters"] == corps["chapters"]
@@ -96,7 +97,7 @@ def test_api_import_cours(client: TestClient) -> None:
     assert envoyer_cours(client, "a.md", b"# A texte", priority="urgent").status_code == 422
     assert client.patch("/courses/999", json={"priority": "low"}).status_code == 404
     # Pourquoi les vrais fichiers de sample_data : on teste avec les données de la démo,
-    # donc la démo est garantie de fonctionner (SQL.md = 5 chapitres, 6 h).
+    # donc la démo est garantie de fonctionner (SQL.md = 5 chapitres).
 
 
 def semaine_iso(jour: date) -> str:

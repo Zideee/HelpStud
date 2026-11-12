@@ -8,11 +8,13 @@ from pathlib import Path
 from pypdf import PdfReader
 from pypdf.errors import PyPdfError
 
-MOTS_PAR_HEURE = 200
+LIGNES_PAR_HEURE = 40
 PAS_ARRONDI_HEURES = 0.5
 CHARGE_MINIMALE_HEURES = 1.0
 # Pourquoi des constantes nommées : ce sont les règles métier de SPEC §5.1 ;
 # si l'équipe les change, on les modifie à un seul endroit, visible en haut du fichier.
+# (La règle est passée de « 200 mots / h » à « 40 lignes / h » après le Sprint 1 : seule
+# cette constante et le comptage ont changé, grâce à ce découpage.)
 
 PREFIXES_TITRE_MARKDOWN = ("# ", "## ")
 # Pourquoi seulement # et ## : ce sont les niveaux de chapitre décidés (Q3 de SPEC.md) ;
@@ -37,22 +39,22 @@ class ChapitreImporte:
     """Un chapitre tel qu'il sort de l'import, avant d'être enregistré en base."""
 
     titre: str
-    nombre_mots: int
+    nombre_lignes: int
     heures: float
     # Pourquoi frozen=True : un chapitre importé ne doit plus changer ; et deux chapitres
     # identiques sont égaux (==), ce qui rend les tests très simples à écrire.
 
 
-def compter_mots(texte: str) -> int:
-    """Nombre de mots d'un texte (séparés par des espaces)."""
-    return len(texte.split())
-    # Pourquoi split() sans argument : il coupe sur tous les blancs (espaces, tabulations,
-    # retours à la ligne) et ignore les blancs répétés, donc pas de « mots vides ».
+def compter_lignes(texte: str) -> int:
+    """Nombre de lignes non vides (une ligne faite seulement d'espaces ne compte pas)."""
+    return sum(1 for ligne in texte.splitlines() if ligne.strip())
+    # Pourquoi ignorer les lignes vides : elles séparent les paragraphes mais ne
+    # contiennent rien à apprendre ; les compter gonflerait la charge.
 
 
-def calculer_charge(nombre_mots: int) -> float:
-    """Heures d'étude d'un chapitre : mots / 200, arrondi au 0,5 h supérieur, minimum 1 h."""
-    heures = nombre_mots / MOTS_PAR_HEURE
+def calculer_charge(nombre_lignes: int) -> float:
+    """Heures d'étude d'un chapitre : lignes / 40, arrondi au 0,5 h supérieur, minimum 1 h."""
+    heures = nombre_lignes / LIGNES_PAR_HEURE
     heures_arrondies = math.ceil(heures / PAS_ARRONDI_HEURES) * PAS_ARRONDI_HEURES
     return max(CHARGE_MINIMALE_HEURES, heures_arrondies)
     # Pourquoi arrondir au supérieur : mieux vaut surestimer le travail que le sous-estimer
@@ -72,8 +74,8 @@ def lire_titre_markdown(ligne: str) -> str | None:
 
 def creer_chapitre(titre: str, lignes: list[str]) -> ChapitreImporte:
     """Construit un chapitre à partir de son titre et des lignes de son contenu."""
-    nombre_mots = compter_mots("\n".join(lignes))
-    return ChapitreImporte(titre, nombre_mots, calculer_charge(nombre_mots))
+    nombre_lignes = compter_lignes("\n".join(lignes))
+    return ChapitreImporte(titre, nombre_lignes, calculer_charge(nombre_lignes))
     # Pourquoi une fonction à part : le même calcul sert pour chaque titre, pour le
     # dernier chapitre et pour un fichier sans titre ; on l'écrit une seule fois.
 
@@ -108,9 +110,9 @@ def extraire_chapitres_pdf(contenu: bytes, titre_par_defaut: str) -> list[Chapit
     except PyPdfError as erreur:
         raise FichierVide(f"PDF illisible : {erreur}") from erreur
     chapitres = [
-        creer_chapitre(f"Page {numero}", [texte])
+        creer_chapitre(f"Page {numero}", texte.splitlines())
         for numero, texte in enumerate(textes, start=1)
-        if compter_mots(texte) > 0
+        if compter_lignes(texte) > 0
     ]
     if not chapitres:
         raise FichierVide("Le PDF ne contient aucun texte (scan ou pages blanches ?)")
@@ -129,7 +131,7 @@ def importer_cours(nom_fichier: str, contenu: bytes) -> tuple[str, list[Chapitre
     if extension == ".pdf":
         return chemin.stem, extraire_chapitres_pdf(contenu, chemin.stem)
     texte = contenu.decode("utf-8-sig", errors="replace")
-    if compter_mots(texte) == 0:
+    if compter_lignes(texte) == 0:
         raise FichierVide("Le fichier Markdown est vide")
     return chemin.stem, extraire_chapitres_markdown(texte, chemin.stem)
     # Pourquoi tester le format en premier : un .docx vide doit dire « mauvais format »
